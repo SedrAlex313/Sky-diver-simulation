@@ -95,15 +95,20 @@ myscene.add(sphere);
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/'); // use a full url path
- // Define the paths to the WebP textures
-    
- const texturePaths = [
-    "texture/skydiver_BaseColor.webp",
-    "texture/skydiver_Metallic.webp",
-    "texture/skydiver_Normal.webp",
-    "texture/skydiver_Clothes.webp",
-  ];
-  
+ 
+// Define the paths to the WebP textures
+const skyDiverTextureBaseColor = textureLoader.load("texture/skydiver_BaseColor.webp");
+const skyDiverTextureRoughness = textureLoader.load("texture/skydiver_Roughness.webp");
+const skyDiverTextureMetallic = textureLoader.load("texture/skydiver_Metallic.webp");
+const skyDiverTextureNormal = textureLoader.load("texture/skydiver_Normal.webp");
+const skyDiverTextureClothes = textureLoader.load("texture/skydiver_Clothes.webp");
+skyDiverTextureBaseColor.flipY = false;
+skyDiverTextureRoughness.flipY = false;
+skyDiverTextureMetallic.flipY = false;
+skyDiverTextureNormal.flipY = false;
+skyDiverTextureClothes.flipY = false;
+
+
    
 
   
@@ -111,44 +116,53 @@ dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5
 const gltfloader = new GLTFLoader();
 gltfloader.setDRACOLoader(dracoLoader);
 
-// Load the WebP textures
-  const textures = texturePaths.map((path) => textureLoader.load(path));
 
-  // Set the flipY property to false for each loaded texture
-  textures.forEach((texture) => (texture.flipY = false));
 
   // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
-    const { scene, nodes } = gltf;
-console.log(gltf);
-    // Apply textures to materials
-    if (nodes) {
+  const model= gltf.scene
 
-    nodes.forEach((node) => {
-      if (node.material) {
-        node.material.map = textures[0]; // Set the base color texture
-        // node.material.roughnessMap = textures[1];
-        // node.material.metalnessMap = textures[2];
-        // node.material.normalMap = textures[3];
-        // node.material.map = textures[4];
-       
-      }
-    })
-}
-      myscene.add(scene)
+const nodes = [];
+model.traverse((node) => {
+  if (node.isMesh) {
+    nodes.push(node);
+  }
+})
 
-   });
-   
-    
+  // Find the required nodes
+  const mixamorigHips = model.getObjectByName('mixamorigHips');
+  const skydiver = model.getObjectByName('skydiver_2')
+
+  const material = new THREE.MeshStandardMaterial({
+    side: THREE.DoubleSide,
+    map: skyDiverTextureBaseColor,
+    roughnessMap: skyDiverTextureRoughness,
+    metalnessMap: skyDiverTextureMetallic,
+    normalMap: skyDiverTextureNormal,
+    normalScale: new THREE.Vector2(-0.2, 0.2),
+    envMapIntensity: 0.8,
+    toneMapped: false,
+  });
+  
+  const skinnedMesh = new THREE.SkinnedMesh(skydiver.geometry, material);
+  skinnedMesh.bind(skydiver.skeleton);
+  myscene.add(skinnedMesh);
+
+  })
 
 // Camera Position
 
 // lighting
-var ambientLight = new THREE.AmbientLight( 0xFFFFFF, 0.2 );
+var ambientLight = new THREE.AmbientLight( 0xffffff, 0.2 );
 myscene.add( ambientLight );
-const directionalLight = new THREE.DirectionalLight(0xffffff, 2)
-directionalLight.position.set(-0.15, -2, 0);
-myscene.add(directionalLight)
+const directionalLight1 = new THREE.DirectionalLight(0xffffff, 2);
+directionalLight1.position.set(-0.15, 2, 0);
+myscene.add(directionalLight1);
+
+const directionalLight2 = new THREE.DirectionalLight(0xffffff, 2);
+directionalLight2.position.set(0.15, -2, 0);
+myscene.add(directionalLight2);
+
 
 
 
