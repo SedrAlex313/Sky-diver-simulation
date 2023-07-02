@@ -4,18 +4,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 
-// const skyDiverTextureBaseColor = textureLoader.load('texture/skydiver_BaseColor.webp');
-// const skyDiverTextureMetallic = textureLoader.load('texture/skydiver_Metallic.webp')
-// const skyDiverTextureNormal = textureLoader.load('texture/skydiver_Normal.webp');
-// const skyDiverTextureRoughness = textureLoader.load(' texture/skydiver_Roughness.webp"');
 
 
-
-
-/**
- *
- * Base
- */
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 
@@ -51,7 +41,7 @@ window.addEventListener('resize', () =>
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.1, 100)
+const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 100)
 camera.position.x = -1
 camera.position.y = -1
 camera.position.z = 5;
@@ -59,9 +49,16 @@ camera.position.z = 5;
 myscene.add(camera)
 
 // Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.keys = {
+	LEFT: 'KeyA', //left arrow
+	UP: 'KeyW', // up arrow
+	RIGHT: 'KeyD', // right arrow
+	BOTTOM: 'KeyS' // down arrow
+}
+controls.listenToKeyEvents(window);
+controls.keyPanSpeed=300;
 /**
  * Renderer
  */
@@ -85,6 +82,7 @@ var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide 
 
 // Create the sky sphere mesh
 var sphere = new THREE.Mesh(geometry, material);
+
 
 // Add the sky sphere to the scene
 myscene.add(sphere);
@@ -117,38 +115,32 @@ const gltfloader = new GLTFLoader();
 gltfloader.setDRACOLoader(dracoLoader);
 
 
+  // Set the flipY property to false for each loaded texture
+  textures.forEach((texture) => (texture.flipY = false));
 
   // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
-  const model= gltf.scene
+    const { scene, nodes } = gltf;
+console.log(gltf);
+    // Apply textures to materials
+    if (nodes) {
 
-const nodes = [];
-model.traverse((node) => {
-  if (node.isMesh) {
-    nodes.push(node);
-  }
-})
+    nodes.forEach((node) => {
+      if (node.material) {
+        node.material.map = textures[0]; // Set the base color texture
+        // node.material.roughnessMap = textures[1];
+        // node.material.metalnessMap = textures[2];
+        // node.material.normalMap = textures[3];
+        // node.material.map = textures[4];
+       
+      }
+    })
+}
+      myscene.add(scene)
 
-  // Find the required nodes
-  const mixamorigHips = model.getObjectByName('mixamorigHips');
-  const skydiver = model.getObjectByName('skydiver_2')
-
-  const material = new THREE.MeshStandardMaterial({
-    side: THREE.DoubleSide,
-    map: skyDiverTextureBaseColor,
-    roughnessMap: skyDiverTextureRoughness,
-    metalnessMap: skyDiverTextureMetallic,
-    normalMap: skyDiverTextureNormal,
-    normalScale: new THREE.Vector2(-0.2, 0.2),
-    envMapIntensity: 0.8,
-    toneMapped: false,
-  });
-  
-  const skinnedMesh = new THREE.SkinnedMesh(skydiver.geometry, material);
-  skinnedMesh.bind(skydiver.skeleton);
-  myscene.add(skinnedMesh);
-
-  })
+   });
+   
+    
 
 // Camera Position
 
@@ -180,28 +172,16 @@ const clock = new THREE.Clock()
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
-    let translationY = 0.001;
-    if (skinnedMesh) {
-      const parentObject = skinnedMesh.parent;
-      const translationAmount = translationY; // Adjust the translation amount as needed
-    
-      // Translate the parent object
-      parentObject.position.y += translationAmount;
-    }
-    
-    // Update controls
-    controls.update();
-    
-    // Render the scene
-    renderer.render(myscene, camera);
-    
+
+  
     // Update controls
     controls.update()
 
-    // Render
-    renderer.render(myscene, camera)
-    // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
+  // Render
+  renderer.render(myscene, camera);
+
+  // Call tick again on the next frame
+  window.requestAnimationFrame(tick);
 }
 
-tick()
+tick();
