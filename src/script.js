@@ -167,15 +167,15 @@ const Cd = 0.75; // Drag coefficient
 const A = 2.5; // Cross-sectional area of the parachuter (in m^2)
 
 // Setting the initial conditions
-const Vz0 = 0; // Initial vertical velocity of the parachuter (in m/s)
+const Vy0 = 0; // Initial vertical velocity of the parachuter (in m/s)
 
 // Calculating the vertical velocity at each time step
 function calculateVerticalVelocity(t) {
   const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
   const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * t);
-  const Vz = term1 * Math.tanh(term2);
+  const vy = term1 * Math.tanh(term2);
 
-  return Vz;
+  return vy;
 }
 
 
@@ -189,14 +189,14 @@ const tick = () => {
    // Store the delta time in a variable
 
   // Calculating the vertical velocity at the current time
-  const Vz = calculateVerticalVelocity(elapsedTime);
+  const Vy = calculateVerticalVelocity(elapsedTime);
 //x+=1;
 if (skydiver) {
 
   
   
     // Update the position of the skydiver along the x-axis
-   skydiver.position.y -= Vz*0.0010;
+   skydiver.position.y -= Vy*0.0010;
    console.log(" skydiver.position.y:", skydiver.position.y);
   
  
