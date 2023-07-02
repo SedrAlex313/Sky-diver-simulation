@@ -4,18 +4,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 
-// const skyDiverTextureBaseColor = textureLoader.load('texture/skydiver_BaseColor.webp');
-// const skyDiverTextureMetallic = textureLoader.load('texture/skydiver_Metallic.webp')
-// const skyDiverTextureNormal = textureLoader.load('texture/skydiver_Normal.webp');
-// const skyDiverTextureRoughness = textureLoader.load(' texture/skydiver_Roughness.webp"');
 
 
-
-
-/**
- *
- * Base
- */
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 
@@ -51,7 +41,7 @@ window.addEventListener('resize', () =>
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.1, 100)
+const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 100)
 camera.position.x = -1
 camera.position.y = -1
 camera.position.z = 5;
@@ -59,9 +49,16 @@ camera.position.z = 5;
 myscene.add(camera)
 
 // Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.keys = {
+	LEFT: 'KeyA', //left arrow
+	UP: 'KeyW', // up arrow
+	RIGHT: 'KeyD', // right arrow
+	BOTTOM: 'KeyS' // down arrow
+}
+controls.listenToKeyEvents(window);
+controls.keyPanSpeed=300;
 /**
  * Renderer
  */
@@ -85,6 +82,7 @@ var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide 
 
 // Create the sky sphere mesh
 var sphere = new THREE.Mesh(geometry, material);
+
 
 // Add the sky sphere to the scene
 myscene.add(sphere);
@@ -117,36 +115,18 @@ const gltfloader = new GLTFLoader();
 gltfloader.setDRACOLoader(dracoLoader);
 
 
-
+let skydiver;
   // Load the GLTF model
-  gltfloader.load("models/skydiver.glb", (gltf) => {
-  const model= gltf.scene
+  gltfloader.load("models/astronau1t.glb", (gltf) => {
+  skydiver= gltf.scene
 
-const nodes = [];
-model.traverse((node) => {
-  if (node.isMesh) {
-    nodes.push(node);
-  }
-})
 
-  // Find the required nodes
-  const mixamorigHips = model.getObjectByName('mixamorigHips');
-  const skydiver = model.getObjectByName('skydiver_2')
 
-  const material = new THREE.MeshStandardMaterial({
-    side: THREE.DoubleSide,
-    map: skyDiverTextureBaseColor,
-    roughnessMap: skyDiverTextureRoughness,
-    metalnessMap: skyDiverTextureMetallic,
-    normalMap: skyDiverTextureNormal,
-    normalScale: new THREE.Vector2(-0.2, 0.2),
-    envMapIntensity: 0.8,
-    toneMapped: false,
-  });
+ 
+  gltf.scene.position.set(0, 0,0);
+  gltf.scene.rotation.x=90;
   
-  const skinnedMesh = new THREE.SkinnedMesh(skydiver.geometry, material);
-  skinnedMesh.bind(skydiver.skeleton);
-  myscene.add(skinnedMesh);
+  myscene.add(gltf.scene);
 
   })
 
@@ -177,18 +157,62 @@ myscene.add(directionalLight2);
  */
 const clock = new THREE.Clock()
 
-const tick = () =>
-{
-    const elapsedTime = clock.getElapsedTime()
+// ...
 
-  
-    // Update controls
-    controls.update()
+// Definning the variables
+const m = 75; // Mass of the parachuter (in kg)
+const g = 9.8; // Acceleration due to gravity (in m/s^2)
+const p = 1.2; // Air density (in kg/m^3)
+const Cd = 0.75; // Drag coefficient
+const A = 2.5; // Cross-sectional area of the parachuter (in m^2)
 
-    // Render
-    renderer.render(myscene, camera)
-    // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
+// Setting the initial conditions
+const Vz0 = 0; // Initial vertical velocity of the parachuter (in m/s)
+
+// Calculating the vertical velocity at each time step
+function calculateVerticalVelocity(t) {
+  const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
+  const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * t);
+  const Vz = term1 * Math.tanh(term2);
+
+  return Vz;
 }
 
-tick()
+
+
+
+
+
+
+const tick = () => {
+  const elapsedTime = clock.getElapsedTime();
+   // Store the delta time in a variable
+
+  // Calculating the vertical velocity at the current time
+  const Vz = calculateVerticalVelocity(elapsedTime);
+//x+=1;
+if (skydiver) {
+
+  
+  
+    // Update the position of the skydiver along the x-axis
+   skydiver.position.y -= Vz*0.0010;
+   console.log(" skydiver.position.y:", skydiver.position.y);
+  
+ 
+
+ 
+}
+
+
+  // Update controls
+  controls.update();
+
+  // Render
+  renderer.render(myscene, camera);
+
+  // Call tick again on the next frame
+  window.requestAnimationFrame(tick);
+}
+
+tick();
