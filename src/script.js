@@ -4,8 +4,18 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 
+// const skyDiverTextureBaseColor = textureLoader.load('texture/skydiver_BaseColor.webp');
+// const skyDiverTextureMetallic = textureLoader.load('texture/skydiver_Metallic.webp')
+// const skyDiverTextureNormal = textureLoader.load('texture/skydiver_Normal.webp');
+// const skyDiverTextureRoughness = textureLoader.load(' texture/skydiver_Roughness.webp"');
 
 
+
+
+/**
+ *
+ * Base
+ */
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 
@@ -41,16 +51,16 @@ window.addEventListener('resize', () =>
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 100)
-camera.position.x = -1
-camera.position.y = -1
-camera.position.z = 5;
+const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.1, 100)
+camera.position.x = 10
+camera.position.y = 10
+camera.position.z = 10;
 
 myscene.add(camera)
 
 // Controls
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
+const controls = new OrbitControls(camera, canvas)
+controls.enableDamping = true
 controls.keys = {
 	LEFT: 'KeyA', //left arrow
 	UP: 'KeyW', // up arrow
@@ -59,6 +69,7 @@ controls.keys = {
 }
 controls.listenToKeyEvents(window);
 controls.keyPanSpeed=300;
+
 /**
  * Renderer
  */
@@ -70,9 +81,9 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 
 // Create the sphere geometry
-var radius = 15; // Adjust the radius as desired
+var radius = 40; // Adjust the radius as desired
 var widthSegments = 60; // Adjust the number of segments for the sphere
-var heightSegments = 40;
+var heightSegments = 90;
 var geometry = new THREE.SphereGeometry(radius, widthSegments, heightSegments);
 
 // Create the sky material
@@ -82,7 +93,6 @@ var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide 
 
 // Create the sky sphere mesh
 var sphere = new THREE.Mesh(geometry, material);
-
 
 // Add the sky sphere to the scene
 myscene.add(sphere);
@@ -109,38 +119,42 @@ skyDiverTextureClothes.flipY = false;
 
    
 
-  
 
 const gltfloader = new GLTFLoader();
 gltfloader.setDRACOLoader(dracoLoader);
 
 
-  // Set the flipY property to false for each loaded texture
-  textures.forEach((texture) => (texture.flipY = false));
-
+let skinnedMesh;
   // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
-    const { scene, nodes } = gltf;
-console.log(gltf);
-    // Apply textures to materials
-    if (nodes) {
+  const model= gltf.scene
 
-    nodes.forEach((node) => {
-      if (node.material) {
-        node.material.map = textures[0]; // Set the base color texture
-        // node.material.roughnessMap = textures[1];
-        // node.material.metalnessMap = textures[2];
-        // node.material.normalMap = textures[3];
-        // node.material.map = textures[4];
-       
-      }
-    })
-}
-      myscene.add(scene)
 
-   });
-   
-    
+
+  // Find the required nodes
+  const skydiver = model.getObjectByName('skydiver_2')
+
+  const material = new THREE.MeshStandardMaterial({
+    side: THREE.DoubleSide,
+    map: skyDiverTextureBaseColor,
+    roughnessMap: skyDiverTextureRoughness,
+    metalnessMap: skyDiverTextureMetallic,
+    normalMap: skyDiverTextureNormal,
+    normalScale: new THREE.Vector2(-0.2, 0.2),
+    envMapIntensity: 0.8,
+    toneMapped: false,
+  });
+  
+   skinnedMesh = new THREE.SkinnedMesh(skydiver.geometry, material);
+
+  // skeleton 
+  skinnedMesh.bind(skydiver.skeleton);
+  
+
+
+  myscene.add(skinnedMesh);
+
+  })
 
 // Camera Position
 
@@ -148,11 +162,11 @@ console.log(gltf);
 var ambientLight = new THREE.AmbientLight( 0xffffff, 0.2 );
 myscene.add( ambientLight );
 const directionalLight1 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight1.position.set(-0.15, 2, 0);
+directionalLight1.position.set(-0.15, -100, 0);
 myscene.add(directionalLight1);
 
 const directionalLight2 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight2.position.set(0.15, -2, 0);
+directionalLight2.position.set(0.15, 100, 0);
 myscene.add(directionalLight2);
 
 
@@ -169,19 +183,51 @@ myscene.add(directionalLight2);
  */
 const clock = new THREE.Clock()
 
+// Definning the variables
+const m = 75; // Mass of the parachuter (in kg)
+const g = 9.8; // Acceleration due to gravity (in m/s^2)
+const p = 1.2; // Air density (in kg/m^3)
+const Cd = 0.75; // Drag coefficient
+const A = 2.5; // Cross-sectional area of the parachuter (in m^2)
+
+// Setting the initial conditions
+const Vy0 = 0; // Initial vertical velocity of the parachuter (in m/s)
+
+// Calculating the vertical velocity at each time step
+function calculateVerticalVelocity(t) {
+  const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
+  const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * t);
+  const vy = term1 * Math.tanh(term2);
+
+  return vy;
+}
+
+let translationY = 0.009; // Adjust this value to control the translation amount
 const tick = () =>
 {
-    const elapsedTime = clock.getElapsedTime()
+  const elapsedTime = clock.getElapsedTime();
+  // Store the delta time in a variable
 
+ // Calculating the vertical velocity at the current time
+ const Vy = calculateVerticalVelocity(elapsedTime);
   
+  if (skinnedMesh) {
+    const parentObject = skinnedMesh.parent;
+  const translationAmount = translationY; // Adjust the translation amount as needed
+
+  // Translate the parent object
+parentObject.position.y += Vy*0.0010;;
+console.log(" skydiver.position.y:", skydiver.position.y);
+
+  }
+    
     // Update controls
     controls.update()
 
-  // Render
-  renderer.render(myscene, camera);
-
-  // Call tick again on the next frame
-  window.requestAnimationFrame(tick);
+    // Render
+    renderer.render(myscene, camera)
+    // Call tick again on the next frame
+    window.requestAnimationFrame(tick)
 }
 
-tick();
+tick()
