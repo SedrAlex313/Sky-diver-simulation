@@ -217,7 +217,7 @@ const tick = () =>
 
   // Translate the parent object
 parentObject.position.y += Vy*0.0010;;
-console.log(" skydiver.position.y:", skydiver.position.y);
+console.log(" skydiver.position.y:", parentObject.position.y);
 
   }
     
