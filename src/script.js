@@ -3,13 +3,30 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { World } from './world/world';
+import { Physics } from './Physics/Physics';
 
-// const skyDiverTextureBaseColor = textureLoader.load('texture/skydiver_BaseColor.webp');
-// const skyDiverTextureMetallic = textureLoader.load('texture/skydiver_Metallic.webp')
-// const skyDiverTextureNormal = textureLoader.load('texture/skydiver_Normal.webp');
-// const skyDiverTextureRoughness = textureLoader.load(' texture/skydiver_Roughness.webp"');
+var textureLoader = new THREE.TextureLoader();
+
+// Define the paths to the WebP textures
+const skyDiverTextureBaseColor = textureLoader.load("texture/skydiver_BaseColor.webp");
+const skyDiverTextureRoughness = textureLoader.load("texture/skydiver_Roughness.webp");
+const skyDiverTextureMetallic = textureLoader.load("texture/skydiver_Metallic.webp");
+const skyDiverTextureNormal = textureLoader.load("texture/skydiver_Normal.webp");
+const skyDiverTextureClothes = textureLoader.load("texture/skydiver_Clothes.webp");
+skyDiverTextureBaseColor.flipY = false;
+skyDiverTextureRoughness.flipY = false;
+skyDiverTextureMetallic.flipY = false;
+skyDiverTextureNormal.flipY = false;
+skyDiverTextureClothes.flipY = false;
 
 
+// Definning the variables
+const m = 75; // Mass of the parachuter (in kg)
+const g = new THREE.Vector3(0, -9.81, 0); // Acceleration due to gravity (m/s^2)
+const p = 1.225 // Air density (in kg/m^3)
+const Cd = 0.25; // Drag coefficient
+const A = 0.7; // Cross-sectional area of the parachuter (in m^2)
 
 
 /**
@@ -21,9 +38,6 @@ const canvas = document.querySelector('canvas.webgl')
 
 // Scene
 const myscene = new THREE.Scene()
-
-
-
 
 /**
  * Sizes
@@ -52,9 +66,9 @@ window.addEventListener('resize', () =>
  */
 // Base camera
 const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.1, 100)
-camera.position.x = 10
-camera.position.y = 10
-camera.position.z = 10;
+camera.position.x = 0
+camera.position.y = 0
+camera.position.z = 20;
 
 myscene.add(camera)
 
@@ -79,84 +93,54 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+// Create an instance of the World class
+const world = new World();
 
-// Create the sphere geometry
-var radius = 40; // Adjust the radius as desired
-var widthSegments = 60; // Adjust the number of segments for the sphere
-var heightSegments = 90;
-var geometry = new THREE.SphereGeometry(radius, widthSegments, heightSegments);
+world.loadTexture('./sky-texture.jpg');
+world.createMesh(30, 240, 240); // Size of the skybox
 
-// Create the sky material
-var textureLoader = new THREE.TextureLoader();
-var texture = textureLoader.load("/sky-texture.jpg"); // Replace with the path to your sky texture
-var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
-
-// Create the sky sphere mesh
-var sphere = new THREE.Mesh(geometry, material);
-
-// Add the sky sphere to the scene
-myscene.add(sphere);
+myscene.add(world.mesh);
 
 /**
- * Models
- */
-
+  Skydiver_model
+ **/
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/'); // use a full url path
  
-// Define the paths to the WebP textures
-const skyDiverTextureBaseColor = textureLoader.load("texture/skydiver_BaseColor.webp");
-const skyDiverTextureRoughness = textureLoader.load("texture/skydiver_Roughness.webp");
-const skyDiverTextureMetallic = textureLoader.load("texture/skydiver_Metallic.webp");
-const skyDiverTextureNormal = textureLoader.load("texture/skydiver_Normal.webp");
-const skyDiverTextureClothes = textureLoader.load("texture/skydiver_Clothes.webp");
-skyDiverTextureBaseColor.flipY = false;
-skyDiverTextureRoughness.flipY = false;
-skyDiverTextureMetallic.flipY = false;
-skyDiverTextureNormal.flipY = false;
-skyDiverTextureClothes.flipY = false;
-
-
-   
-
-
 const gltfloader = new GLTFLoader();
 gltfloader.setDRACOLoader(dracoLoader);
 
+let mixer = null
 
-let skinnedMesh;
   // Load the GLTF model
-  gltfloader.load("models/skydiver.glb", (gltf) => {
-  const model= gltf.scene
+  let skydiver;
+
+    // Load the GLTF model
+  gltfloader.load("models/astronau1t.glb", (gltf) => {
+  skydiver= gltf.scene
 
 
 
-  // Find the required nodes
-  const skydiver = model.getObjectByName('skydiver_2')
+ 
+// Set the initial position of the skydiver using a vector (m)
 
-  const material = new THREE.MeshStandardMaterial({
-    side: THREE.DoubleSide,
-    map: skyDiverTextureBaseColor,
-    roughnessMap: skyDiverTextureRoughness,
-    metalnessMap: skyDiverTextureMetallic,
-    normalMap: skyDiverTextureNormal,
-    normalScale: new THREE.Vector2(-0.2, 0.2),
-    envMapIntensity: 0.8,
-    toneMapped: false,
-  });
-  
-   skinnedMesh = new THREE.SkinnedMesh(skydiver.geometry, material);
 
-  // skeleton 
-  skinnedMesh.bind(skydiver.skeleton);
+ skydiver.position.set(0, 10,0);
+
+skydiver.rotation.x-=80;
   
 
+  
 
-  myscene.add(skinnedMesh);
+  myscene.add(skydiver);
 
   })
+//physics
+const physics = new Physics(-9.81, 0.01);
 
-// Camera Position
+
+
+ 
 
 // lighting
 var ambientLight = new THREE.AmbientLight( 0xffffff, 0.2 );
@@ -171,7 +155,18 @@ myscene.add(directionalLight2);
 
 
 
+function calculateVerticalVelocity2(deltaTime) {
+ 
 
+  const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
+  
+  const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
+  
+  const vy = term1 * Math.tanh(term2);
+  
+  
+  return vy;
+  }
 
 
 
@@ -182,45 +177,34 @@ myscene.add(directionalLight2);
  * Animate
  */
 const clock = new THREE.Clock()
+let previousTime = 0
+let translationY = 0.0009; // Adjust this value to control the translation amount
 
-// Definning the variables
-const m = 75; // Mass of the parachuter (in kg)
-const g = 9.8; // Acceleration due to gravity (in m/s^2)
-const p = 1.2; // Air density (in kg/m^3)
-const Cd = 0.75; // Drag coefficient
-const A = 2.5; // Cross-sectional area of the parachuter (in m^2)
-
-// Setting the initial conditions
-const Vy0 = 0; // Initial vertical velocity of the parachuter (in m/s)
-
-// Calculating the vertical velocity at each time step
-function calculateVerticalVelocity(t) {
-  const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
-  const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * t);
-  const vy = term1 * Math.tanh(term2);
-
-  return vy;
-}
-
-let translationY = 0.009; // Adjust this value to control the translation amount
 const tick = () =>
 {
   const elapsedTime = clock.getElapsedTime();
-  // Store the delta time in a variable
-
- // Calculating the vertical velocity at the current time
- const Vy = calculateVerticalVelocity(elapsedTime);
+  const deltaTime = elapsedTime   - previousTime;
+  previousTime = elapsedTime
+ 
+ if(mixer !==null)
+ {
+  mixer.update(deltaTime)
+ }
+ 
   
-  if (skinnedMesh) {
-    const parentObject = skinnedMesh.parent;
-  const translationAmount = translationY; // Adjust the translation amount as needed
 
-  // Translate the parent object
-parentObject.position.y += Vy*0.0010;;
-console.log(" skydiver.position.y:", parentObject.position.y);
+  // Calculate the vertical velocity at the current time
+  const Vy = calculateVerticalVelocity2(elapsedTime);
 
-  }
-    
+// Update the skydiver's velocity along the y-axis using the calculated vertical velocity
+if (skydiver) {
+  skydiver.position.y -= Vy*0.0010;
+  console.log(" skydiver.position.y:", skydiver.position.y);
+}
+
+ 
+   
+
     // Update controls
     controls.update()
 
