@@ -194,7 +194,7 @@ const tick = () =>
   
 
   // Calculate the vertical velocity at the current time
-  const Vy = calculateVerticalVelocity(elapsedTime);
+  const Vy = physics.calculateVerticalVelocity(elapsedTime);
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skydiver) {
