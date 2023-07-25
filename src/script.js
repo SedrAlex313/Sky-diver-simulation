@@ -113,11 +113,24 @@ gltfloader.setDRACOLoader(dracoLoader);
 let mixer = null
 
   // Load the GLTF model
-  let skydiver;
+  let skinnedMesh;
 
     // Load the GLTF model
-  gltfloader.load("models/astronau1t.glb", (gltf) => {
-  skydiver= gltf.scene
+  gltfloader.load("models/skydiver.glb", (gltf) => {
+   skinnedMesh = gltf.scene;
+    myscene.add(skinnedMesh);
+
+      const animations = gltf.animations;
+       mixer = new THREE.AnimationMixer(skinnedMesh);
+
+  const actions = animations.map(animation => mixer.clipAction(animation));
+
+  // Assuming you have defined the animation actions as 'actions'
+actions.forEach(action => {
+  action.play();
+});
+
+
 
 
 
@@ -125,9 +138,8 @@ let mixer = null
 // Set the initial position of the skydiver using a vector (m)
 
 
- skydiver.position.set(0, 10,0);
+ skinnedMesh.position.set(0, 0,0);
 
-skydiver.rotation.x-=80;
   
 
   
@@ -178,7 +190,7 @@ function calculateVerticalVelocity2(deltaTime) {
  */
 const clock = new THREE.Clock()
 let previousTime = 0
-let translationY = 0.0009; // Adjust this value to control the translation amount
+let translationY = 0.00000009; // Adjust this value to control the translation amount
 
 const tick = () =>
 {
@@ -197,9 +209,9 @@ const tick = () =>
   const Vy = physics.calculateVerticalVelocity(elapsedTime);
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
-if (skydiver) {
-  skydiver.position.y -= Vy*0.0010;
-  console.log(" skydiver.position.y:", skydiver.position.y);
+if (skinnedMesh) {
+  skinnedMesh.position.y -= Vy*0.0010;
+  console.log(" skydiver.position.y:", skinnedMesh.position.y);
 }
 
  
