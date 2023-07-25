@@ -5,6 +5,7 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { World } from './world/world';
 import { Physics } from './Physics/Physics';
+import { MeshStandardMaterial } from 'three';
 
 var textureLoader = new THREE.TextureLoader();
 
@@ -113,26 +114,43 @@ gltfloader.setDRACOLoader(dracoLoader);
 let mixer = null
 
   // Load the GLTF model
-  let skydiver;
+  let skinnedMesh;
 
     // Load the GLTF model
-  gltfloader.load("models/astronau1t.glb", (gltf) => {
-  skydiver= gltf.scene
+  gltfloader.load("models/skydiver.glb", (gltf) => {
+   skinnedMesh = gltf.scene;
+
+   //load the animations
+   const animations = gltf.animations;
+       mixer = new THREE.AnimationMixer(skinnedMesh);
+       const actions = animations.map(animation => mixer.clipAction(animation));
+
+  // Assuming you have defined the animation actions as 'actions'
+actions.forEach(action => {
+  action.play();
+});
+
+   //load the textures on the model
+const material = new THREE.MeshStandardMaterial({
+    side: THREE.DoubleSide,
+    map: skyDiverTextureBaseColor,
+    roughnessMap: skyDiverTextureRoughness,
+    metalnessMap: skyDiverTextureMetallic,
+    normalMap: skyDiverTextureNormal,
+    normalScale: new THREE.Vector2(-0.2, 0.2),
+    envMapIntensity: 0.8,
+    toneMapped: false,
+  });
 
 
+  skinnedMesh.traverse(function(child) {
+    if (child.isMesh) {
+      child.material = material;
+    }
+  });
 
- 
-// Set the initial position of the skydiver using a vector (m)
-
-
- skydiver.position.set(0, 10,0);
-
-skydiver.rotation.x-=80;
-  
-
-  
-
-  myscene.add(skydiver);
+  skinnedMesh.position.set(0, 0,0);
+  myscene.add(skinnedMesh);
 
   })
 //physics
@@ -158,9 +176,9 @@ myscene.add(directionalLight2);
 function calculateVerticalVelocity2(deltaTime) {
  
 
-  const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
+  const term1 = Math.sqrt(2 * m * g.length() / (p * Cd * A));
   
-  const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
+  const term2 = Math.sqrt((p * Cd * A * g.length()  / (2 * m)) * deltaTime);
   
   const vy = term1 * Math.tanh(term2);
   
@@ -178,7 +196,7 @@ function calculateVerticalVelocity2(deltaTime) {
  */
 const clock = new THREE.Clock()
 let previousTime = 0
-let translationY = 0.0009; // Adjust this value to control the translation amount
+let translationY = 0.00000009; // Adjust this value to control the translation amount
 
 const tick = () =>
 {
@@ -194,12 +212,12 @@ const tick = () =>
   
 
   // Calculate the vertical velocity at the current time
-  const Vy = physics.calculateVerticalVelocity(elapsedTime);
+  const Vy = calculateVerticalVelocity2(elapsedTime);
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
-if (skydiver) {
-  skydiver.position.y -= Vy*0.0010;
-  console.log(" skydiver.position.y:", skydiver.position.y);
+if (skinnedMesh) {
+  skinnedMesh.position.y -= Vy*0.0010;
+  console.log(" skydiver.position.y:", skinnedMesh.position.y);
 }
 
  
