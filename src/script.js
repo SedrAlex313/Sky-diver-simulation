@@ -5,6 +5,7 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { World } from './world/world';
 import { Physics } from './Physics/Physics';
+import { MeshStandardMaterial } from 'three';
 
 var textureLoader = new THREE.TextureLoader();
 
