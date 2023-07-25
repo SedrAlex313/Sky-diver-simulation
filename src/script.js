@@ -119,33 +119,38 @@ let mixer = null
     // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
    skinnedMesh = gltf.scene;
-    myscene.add(skinnedMesh);
 
-      const animations = gltf.animations;
+   //load the animations
+   const animations = gltf.animations;
        mixer = new THREE.AnimationMixer(skinnedMesh);
-
-  const actions = animations.map(animation => mixer.clipAction(animation));
+       const actions = animations.map(animation => mixer.clipAction(animation));
 
   // Assuming you have defined the animation actions as 'actions'
 actions.forEach(action => {
   action.play();
 });
 
+   //load the textures on the model
+const material = new THREE.MeshStandardMaterial({
+    side: THREE.DoubleSide,
+    map: skyDiverTextureBaseColor,
+    roughnessMap: skyDiverTextureRoughness,
+    metalnessMap: skyDiverTextureMetallic,
+    normalMap: skyDiverTextureNormal,
+    normalScale: new THREE.Vector2(-0.2, 0.2),
+    envMapIntensity: 0.8,
+    toneMapped: false,
+  });
 
 
+  skinnedMesh.traverse(function(child) {
+    if (child.isMesh) {
+      child.material = material;
+    }
+  });
 
-
- 
-// Set the initial position of the skydiver using a vector (m)
-
-
- skinnedMesh.position.set(0, 0,0);
-
-  
-
-  
-
-  myscene.add(skydiver);
+  skinnedMesh.position.set(0, 0,0);
+  myscene.add(skinnedMesh);
 
   })
 //physics
@@ -171,9 +176,9 @@ myscene.add(directionalLight2);
 function calculateVerticalVelocity2(deltaTime) {
  
 
-  const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
+  const term1 = Math.sqrt(2 * m * g.length() / (p * Cd * A));
   
-  const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
+  const term2 = Math.sqrt((p * Cd * A * g.length()  / (2 * m)) * deltaTime);
   
   const vy = term1 * Math.tanh(term2);
   
@@ -207,7 +212,7 @@ const tick = () =>
   
 
   // Calculate the vertical velocity at the current time
-  const Vy = physics.calculateVerticalVelocity(elapsedTime);
+  const Vy = calculateVerticalVelocity2(elapsedTime);
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
