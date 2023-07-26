@@ -130,10 +130,7 @@ actions.forEach(action => {
   action.play();
 });
 
-const uniforms = {
-  uTime: { value: 0 },
-  uClothes: { value:skyDiverTextureClothes }
-};
+
    //load the textures on the model
 const material = new THREE.MeshStandardMaterial({
     side: THREE.DoubleSide,
@@ -144,31 +141,10 @@ const material = new THREE.MeshStandardMaterial({
     normalScale: new THREE.Vector2(-0.2, 0.2),
     envMapIntensity: 0.8,
     toneMapped: false,
-    uniforms: uniforms   // Set the uniforms here
 
   });
 
-// Add the shader
-material.onBeforeCompile = (shader) => {
-  Object.assign(shader.uniforms, uniforms);
-  shader.vertexShader = `
-uniform float uTime;
-uniform sampler2D uClothes;
-${shader.vertexShader}
-`;
 
-shader.vertexShader = shader.vertexShader.replace(
-  `#include <begin_vertex>`,
-  `
-vec3 clothesTexture = vec3(texture2D(uClothes, vUv));
-float circleTime = 2.0;
-float amplitude = 30.0;
-float circleTimeParam = mod(uTime, circleTime);
-vec3 transformed = vec3( position );
-transformed.y += min(clothesTexture.y * sin( circleTimeParam * amplitude * (PI  / circleTime)) * 0.025, 0.5);
-  `
-);
-};
 
 
   skinnedMesh.traverse(function(child) {
@@ -187,11 +163,12 @@ transformed.y += min(clothesTexture.y * sin( circleTimeParam * amplitude * (PI  
   myscene.add(skinnedMesh);
 
   })
+
 //physics
 const physics = new Physics(-9.81, 0.01);
 
 
-//WindShape
+//WindShape to make the simulation more realistic
 class WindShape {
   constructor() {
     this.geometry = new THREE.PlaneGeometry(0.0135, 1.2);
@@ -217,9 +194,8 @@ class WindShape {
 
 
 
-//Create an instance 
+//create an object and define the amount
 const windShapes = Array.from({length: 130}, () => new WindShape());
-
 windShapes.forEach(shape => myscene.add(shape.mesh));
 
 
@@ -229,11 +205,11 @@ windShapes.forEach(shape => myscene.add(shape.mesh));
 var ambientLight = new THREE.AmbientLight( 0xffffff, 0.2 );
 myscene.add( ambientLight );
 const directionalLight1 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight1.position.set(-0.15, -100, 0);
+directionalLight1.position.set(-10, -300, 0);
 myscene.add(directionalLight1);
 
 const directionalLight2 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight2.position.set(0.15, 100, 0);
+directionalLight2.position.set(10, 300, 0);
 myscene.add(directionalLight2);
 
 
