@@ -130,6 +130,10 @@ actions.forEach(action => {
   action.play();
 });
 
+const uniforms = {
+  uTime: { value: 0 },
+  uClothes: { value:skyDiverTextureClothes }
+};
    //load the textures on the model
 const material = new THREE.MeshStandardMaterial({
     side: THREE.DoubleSide,
@@ -140,7 +144,31 @@ const material = new THREE.MeshStandardMaterial({
     normalScale: new THREE.Vector2(-0.2, 0.2),
     envMapIntensity: 0.8,
     toneMapped: false,
+    uniforms: uniforms   // Set the uniforms here
+
   });
+
+// Add the shader
+material.onBeforeCompile = (shader) => {
+  Object.assign(shader.uniforms, uniforms);
+  shader.vertexShader = `
+uniform float uTime;
+uniform sampler2D uClothes;
+${shader.vertexShader}
+`;
+
+shader.vertexShader = shader.vertexShader.replace(
+  `#include <begin_vertex>`,
+  `
+vec3 clothesTexture = vec3(texture2D(uClothes, vUv));
+float circleTime = 2.0;
+float amplitude = 30.0;
+float circleTimeParam = mod(uTime, circleTime);
+vec3 transformed = vec3( position );
+transformed.y += min(clothesTexture.y * sin( circleTimeParam * amplitude * (PI  / circleTime)) * 0.025, 0.5);
+  `
+);
+};
 
 
   skinnedMesh.traverse(function(child) {
@@ -149,13 +177,50 @@ const material = new THREE.MeshStandardMaterial({
     }
   });
 
+
+  
+
+ 
+
   skinnedMesh.position.set(0, 0,0);
+  // skinnedMesh.rotation.x = 30
   myscene.add(skinnedMesh);
 
   })
 //physics
 const physics = new Physics(-9.81, 0.01);
 
+
+//WindShape
+class WindShape {
+  constructor() {
+    this.geometry = new THREE.PlaneGeometry(0.0135, 1.2);
+    this.material = new THREE.MeshBasicMaterial({side: THREE.DoubleSide, blending: THREE.AdditiveBlending, opacity: 0.15, transparent: true});
+    this.mesh = new THREE.Mesh(this.geometry, this.material);
+    this.mesh.position.set(
+      THREE.MathUtils.randFloatSpread(8),
+      THREE.MathUtils.randFloatSpread(5),
+      THREE.MathUtils.randFloatSpread(8)
+    );
+    this.randomSpeed = THREE.MathUtils.randFloat(0.05, 0.5);
+  }
+
+  update(camera) {
+    const limitPos = window.innerHeight - (this.mesh.position.y + this.geometry.parameters.height / 2);
+    if (limitPos < 0) {
+      this.mesh.position.y = -(window.innerHeight + this.geometry.parameters.height / 2);
+    }
+    this.mesh.position.y += this.randomSpeed;
+    this.mesh.rotation.y = camera.rotation.y;
+  }
+}
+
+
+
+//Create an instance 
+const windShapes = Array.from({length: 130}, () => new WindShape());
+
+windShapes.forEach(shape => myscene.add(shape.mesh));
 
 
  
@@ -216,12 +281,15 @@ const tick = () =>
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-  skinnedMesh.position.y -= Vy*0.0010;
+  // skinnedMesh.position.y -= Vy*0.0010;
   console.log(" skydiver.position.y:", skinnedMesh.position.y);
 }
 
  
-   
+// Update wind effect
+windShapes.forEach(shape => shape.update(camera));
+
+
 
     // Update controls
     controls.update()
