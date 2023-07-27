@@ -5,6 +5,7 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { World } from './world/world';
 import { Physics } from './Physics/Physics';
+import { Parachute } from './Parachute/Parachute';
 import { MeshStandardMaterial } from 'three';
 
 var textureLoader = new THREE.TextureLoader();
@@ -116,6 +117,9 @@ let mixer = null
   // Load the GLTF model
   let skinnedMesh;
 
+  let parachute; // Declare 'parachute' in the outer scope
+
+
     // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
    skinnedMesh = gltf.scene;
@@ -160,7 +164,14 @@ const material = new THREE.MeshStandardMaterial({
 
   skinnedMesh.position.set(0, 0,0);
   // skinnedMesh.rotation.x = 30
-  myscene.add(skinnedMesh);
+
+
+ // ...
+myscene.add(skinnedMesh);
+
+parachute = new Parachute(myscene, skinnedMesh);
+parachute.loadModel();
+
 
   })
 
@@ -258,7 +269,7 @@ const tick = () =>
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
   // skinnedMesh.position.y -= Vy*0.0010;
-  console.log(" skydiver.position.y:", skinnedMesh.position.y);
+  //console.log(" skydiver.position.y:", skinnedMesh.position.y);
 }
 
  
@@ -272,6 +283,21 @@ windShapes.forEach(shape => shape.update(camera));
 
     // Render
     renderer.render(myscene, camera)
+    
+   // Rest of your code...
+
+// Listen for 'p' key press
+if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists before accessing 'parachuteDeployed'
+  window.addEventListener('keydown', function(event) {
+    if(event.key === 'p') {
+      parachute.deployParachute();
+    }
+  });
+}
+
+
+
+
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 }
