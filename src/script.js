@@ -25,10 +25,12 @@ skyDiverTextureClothes.flipY = false;
 
 // Definning the variables
 const m = 75; // Mass of the parachuter (in kg)
-const g = new THREE.Vector3(0, -9.81, 0); // Acceleration due to gravity (m/s^2)
+const g = 9.81; // Acceleration due to gravity (m/s^2)
 const p = 1.225 // Air density (in kg/m^3)
 const Cd = 0.25; // Drag coefficient
 const A = 0.7; // Cross-sectional area of the parachuter (in m^2)
+const k = 0.25; // Damping coefficient 
+let v0; // Velocity at the time of the parachute deployment
 
 
 /**
@@ -226,18 +228,25 @@ myscene.add(directionalLight2);
 
 
 
-function calculateVerticalVelocity2(deltaTime) {
- 
 
-  const term1 = Math.sqrt(2 * m * g.length() / (p * Cd * A));
-  
-  const term2 = Math.sqrt((p * Cd * A * g.length()  / (2 * m)) * deltaTime);
-  
-  const vy = term1 * Math.tanh(term2);
-  
-  
-  return vy;
+function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
+  let Vy;
+
+  if ( parachuteDeployed) {
+    // For small Reynolds number (when parachute is deployed)
+    Vy = (m * g / k) + (v0 - m * g / k) * Math.exp(-k/m * deltaTime);
+   
+    deltaTime = 0; // Reset the time difference after parachute deployment
+  } else {
+    // Use previous calculations for large Reynolds number (free fall)
+    const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
+    const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
+    Vy = term1 * Math.tanh(term2);
   }
+  v0 = Vy; // Save the current velocity to be used as initial velocity in next calculation
+
+  return Vy;
+}
 
 
 
@@ -262,15 +271,21 @@ const tick = () =>
   mixer.update(deltaTime)
  }
  
-  
+
 
   // Calculate the vertical velocity at the current time
-  const Vy = calculateVerticalVelocity2(elapsedTime);
+  let Vy;
+  if (parachute) {
+     Vy = calculateVerticalVelocity2(elapsedTime, parachute.parachuteDeployed)
+  }
+  else{
+     Vy = calculateVerticalVelocity2(elapsedTime, false)
+  }
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-  skinnedMesh.position.y -= Vy*0.0010;
-  console.log(" skydiver.position.y:", skinnedMesh.position.y);
+  // skinnedMesh.position.y -= Vy*0.0010;
+  //console.log(" skydiver.position.y:", skinnedMesh.position.y);
 }
 
  
