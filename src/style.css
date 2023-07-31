@@ -10,4 +10,35 @@ body{
      left: 0;
      top: 0;
      outline: none;
+}.loading-bar
+{
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    height: 2px;
+    background: #ffffff;
+    transform: scaleX(0.3);
+    transform-origin: top left;
+    transition: transform 0.5s;
+}
+
+.loading-bar.ended
+{
+    transform: scaleX(0);
+    transform-origin: 100% 0;
+    transition: transform 1.5s ease-in-out;
+}
+.current_values{
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    padding: 0.5rem 1rem;
+    backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(229, 233, 178, 0.299);
+    border: 1px solid rgba(29, 107, 184, 0.887);
+    z-index: 100;
+}
+
+.current_values p span {
+    font-weight: bolder;
 }

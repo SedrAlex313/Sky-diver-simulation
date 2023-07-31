@@ -1,3 +1,5 @@
+//FBS
+(function(){var script=document.createElement('script');script.onload=function(){var stats=new Stats();document.body.appendChild(stats.dom);requestAnimationFrame(function loop(){stats.update();requestAnimationFrame(loop)});};script.src='//rawgit.com/mrdoob/stats.js/master/build/stats.min.js';document.head.appendChild(script);})();
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -7,6 +9,7 @@ import { World } from './world/world';
 import { Physics } from './Physics/Physics';
 import { Parachute } from './Parachute/Parachute';
 import { MeshStandardMaterial } from 'three';
+import { WindShape } from './Physics/Windshape';
 
 var textureLoader = new THREE.TextureLoader();
 
@@ -39,6 +42,14 @@ let v0; // Velocity at the time of the parachute deployment
  */
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
+// defining the values of html elements
+const deltaTime= document.getElementById("delta-time");
+const terminalVelocity= document.getElementById(
+  "terminal-velocity",
+);
+const acceleration = document.getElementById("acceleration");
+const currentXMeter = document.getElementById("current-x");
+const currentYMeter = document.getElementById("current-y");
 
 // Scene
 const myscene = new THREE.Scene()
@@ -46,6 +57,7 @@ const myscene = new THREE.Scene()
 /**
  * Sizes
  */
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
@@ -65,14 +77,16 @@ window.addEventListener('resize', () =>
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
 
+
+
 /**
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.1, 100)
+const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
 camera.position.x = 0
 camera.position.y = 0
-camera.position.z = 20;
+camera.position.z = 3;
 
 myscene.add(camera)
 
@@ -97,7 +111,9 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-// Create an instance of the World class
+
+
+//Create an instance of the World class
 const world = new World();
 
 world.loadTexture('./sky-texture.jpg');
@@ -164,7 +180,7 @@ const material = new THREE.MeshStandardMaterial({
 
  
 
-  skinnedMesh.position.set(0, 0,0);
+  skinnedMesh.position.set(0, 10,0);
   // skinnedMesh.rotation.x = 30
 
 
@@ -175,36 +191,13 @@ parachute = new Parachute(myscene, skinnedMesh);
 parachute.loadModel();
 
 
-
   })
 
 //physics
 const physics = new Physics(-9.81, 0.01);
 
 
-//WindShape to make the simulation more realistic
-class WindShape {
-  constructor() {
-    this.geometry = new THREE.PlaneGeometry(0.0135, 1.2);
-    this.material = new THREE.MeshBasicMaterial({side: THREE.DoubleSide, blending: THREE.AdditiveBlending, opacity: 0.15, transparent: true});
-    this.mesh = new THREE.Mesh(this.geometry, this.material);
-    this.mesh.position.set(
-      THREE.MathUtils.randFloatSpread(8),
-      THREE.MathUtils.randFloatSpread(5),
-      THREE.MathUtils.randFloatSpread(8)
-    );
-    this.randomSpeed = THREE.MathUtils.randFloat(0.05, 0.5);
-  }
 
-  update(camera) {
-    const limitPos = window.innerHeight - (this.mesh.position.y + this.geometry.parameters.height / 2);
-    if (limitPos < 0) {
-      this.mesh.position.y = -(window.innerHeight + this.geometry.parameters.height / 2);
-    }
-    this.mesh.position.y += this.randomSpeed;
-    this.mesh.rotation.y = camera.rotation.y;
-  }
-}
 
 
 
@@ -229,26 +222,6 @@ myscene.add(directionalLight2);
 
 
 
-function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
-  let Vy;
-
-  if ( parachuteDeployed) {
-    // For small Reynolds number (when parachute is deployed)
-    Vy = (m * g / k) + (v0 - m * g / k) * Math.exp(-k/m * deltaTime);
-   
-    deltaTime = 0; // Reset the time difference after parachute deployment
-  } else {
-    // Use previous calculations for large Reynolds number (free fall)
-    const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
-    const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
-    Vy = term1 * Math.tanh(term2);
-  }
-  v0 = Vy; // Save the current velocity to be used as initial velocity in next calculation
-
-  return Vy;
-}
-
-
 
 
 
@@ -259,6 +232,7 @@ function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
 const clock = new THREE.Clock()
 let previousTime = 0
 let translationY = 0.00000009; // Adjust this value to control the translation amount
+
 
 const tick = () =>
 {
@@ -276,16 +250,22 @@ const tick = () =>
   // Calculate the vertical velocity at the current time
   let Vy;
   if (parachute) {
-     Vy = calculateVerticalVelocity2(elapsedTime, parachute.parachuteDeployed)
+     Vy = physics.calculateVerticalVelocity2(elapsedTime, parachute.parachuteDeployed)
   }
   else{
-     Vy = calculateVerticalVelocity2(elapsedTime, false)
+     Vy = physics.calculateVerticalVelocity2(elapsedTime, false)
   }
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-  // skinnedMesh.position.y -= Vy*0.0010;
-  //console.log(" skydiver.position.y:", skinnedMesh.position.y);
+   skinnedMesh.position.y -= Vy*0.0010;
+   
+   //update values
+   currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
+   terminalVelocity.textContent = Vy.toFixed(2)
+   console.log(" Vy :", Vy);
+  //  updateOverlay();
+
 }
 
  

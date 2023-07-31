@@ -1,11 +1,12 @@
-import * as THREE from 'three'
 
 // Definning the variables
 const m = 75; // Mass of the parachuter (in kg)
-const g = new THREE.Vector3(0, -9.81, 0); // Acceleration due to gravity (m/s^2)
+const g = 9.81; // Acceleration due to gravity (m/s^2)
 const p = 1.225 // Air density (in kg/m^3)
 const Cd = 0.25; // Drag coefficient
 const A = 0.7; // Cross-sectional area of the parachuter (in m^2)
+const k = 0.25; // Damping coefficient 
+let v0; // Velocity at the time of the parachute deployment
 
 // Variables
 let time = 0; // Current time (in seconds)
@@ -46,17 +47,25 @@ const Fg = g.clone().multiplyScalar(m); // Force due to gravity
  return time += deltaTime;
 }
 
-calculateVerticalVelocity2(deltaTime) {
+calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
  
 
-const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
+  let Vy;
 
-const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
+  if (parachuteDeployed) {
+    // For small Reynolds number (when parachute is deployed)
+    Vy = (m * g / k) + (v0 - m * g / k) * Math.exp(-k/m * deltaTime);
+   
+    deltaTime = 0; // Reset the time difference after parachute deployment
+  } else {
+    // Use previous calculations for large Reynolds number (free fall)
+    const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
+    const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
+    Vy = term1 * Math.tanh(term2);
+  }
+  v0 = Vy; // Save the current velocity to be used as initial velocity in next calculation
 
-const vy = term1 * Math.tanh(term2);
-
-
-return vy;
+  return Vy;
 }
 
 
