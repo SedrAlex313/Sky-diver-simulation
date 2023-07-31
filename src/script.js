@@ -173,6 +173,7 @@ parachute = new Parachute(myscene, skinnedMesh);
 parachute.loadModel();
 
 
+
   })
 
 //physics
@@ -268,8 +269,8 @@ const tick = () =>
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-  // skinnedMesh.position.y -= Vy*0.0010;
-  //console.log(" skydiver.position.y:", skinnedMesh.position.y);
+  skinnedMesh.position.y -= Vy*0.0010;
+  console.log(" skydiver.position.y:", skinnedMesh.position.y);
 }
 
  
