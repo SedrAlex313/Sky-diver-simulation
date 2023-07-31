@@ -1,7 +1,7 @@
 
 // Definning the variables
 const m = 75; // Mass of the parachuter (in kg)
-const g = 9.81; // Acceleration due to gravity (m/s^2)
+const g = new THREE.Vector3(0, -9.81, 0); // Acceleration due to gravity (m/s^2)
 const p = 1.225 // Air density (in kg/m^3)
 const Cd = 0.25; // Drag coefficient
 const A = 0.7; // Cross-sectional area of the parachuter (in m^2)
