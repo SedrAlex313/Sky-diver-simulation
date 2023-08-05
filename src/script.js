@@ -140,12 +140,12 @@ loader.load(urls, function (textureCube) {
 
 
 //Create an instance of the World class
-const world = new World();
+// const world = new World();
 
-world.loadTexture('./sky-texture.jpg');
-world.createMesh(60, 480, 480); // Size of the skybox
+// world.loadTexture('./sky-texture.jpg');
+// world.createMesh(60, 480, 480); // Size of the skybox
 
-myscene.add(world.mesh);
+// myscene.add(world.mesh);
 
 /**
   Skydiver_model
@@ -191,7 +191,7 @@ actions.forEach(action => {
   toneMapped: false,
   onBeforeCompile: (shader) => {
     shader.uniforms.uTime = { value: 0 };
-    shader.uniforms.uClothes = { value: new THREE.TextureLoader().load('texture/skydiver_Clothes.webp') };
+    shader.uniforms.uClothes = { value : skyDiverTextureClothes };
     uniforms = shader.uniforms;
 
     shader.vertexShader = `
@@ -260,11 +260,11 @@ const physics = new Physics(-9.81, 0.01);
 var ambientLight = new THREE.AmbientLight( 0xffffff, 0.2 );
 myscene.add( ambientLight );
 const directionalLight1 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight1.position.set(-10, -300, 0);
+directionalLight1.position.set(-2, -2, 2);
 myscene.add(directionalLight1);
 
 const directionalLight2 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight2.position.set(10, 300, 0);
+directionalLight2.position.set(2, 2, 2);
 myscene.add(directionalLight2);
 
 
@@ -327,7 +327,7 @@ let translationY = 0.00000009; // Adjust this value to control the translation a
 
 const tick = () =>
 {
-  const elapsedTime = clock.getElapsedTime() 
+  const elapsedTime = clock.getElapsedTime() * timeScale
   const deltaTime =  (1/ timeScale ) * (elapsedTime   - previousTime) ;
   previousTime = elapsedTime 
  console.log(deltaTime);
@@ -350,20 +350,22 @@ const tick = () =>
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-  //skinnedMesh.position.y -= Vy*0.0010;
+    //skinnedMesh.position.y -= Vy*0.0010;
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
    terminalVelocity.textContent = Vy.toFixed(2)
    console.log(" Vy :", Vy);
+
+   if (uniforms) {
+    uniforms.uTime.value = clock.getElapsedTime()
+  }
   //  updateOverlay();
 
 }
 
 
   // update shader uniform
-  if (uniforms) {
-    uniforms.uTime.value = clock.getElapsedTime();
-  }
+  
 // Update wind effect
 // windShapes.forEach(shape => shape.update(camera));
 
