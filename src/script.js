@@ -83,10 +83,10 @@ window.addEventListener('resize', () =>
 // Base camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
 camera.position.x = 0
-camera.position.y = 30
+camera.position.y = 0
 camera.position.z = 3;
 
-camera.rotation.y = 90
+// camera.rotation.y = 90
 
 myscene.add(camera)
 
@@ -163,6 +163,8 @@ let mixer = null
 
   let parachute; // Declare 'parachute' in the outer scope
 
+  let material;
+  let uniforms
 
     // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
@@ -178,9 +180,7 @@ actions.forEach(action => {
   action.play();
 });
 
-
-
-const material = new THREE.MeshStandardMaterial({
+ material = new THREE.MeshStandardMaterial({
   side: THREE.DoubleSide,
   map: skyDiverTextureBaseColor,
   roughnessMap: skyDiverTextureRoughness,
@@ -191,7 +191,9 @@ const material = new THREE.MeshStandardMaterial({
   toneMapped: false,
   onBeforeCompile: (shader) => {
     shader.uniforms.uTime = { value: 0 };
-    shader.uniforms.uClothes = { value: new THREE.TextureLoader().load('path_to_your_clothes_texture') };
+    shader.uniforms.uClothes = { value: new THREE.TextureLoader().load('texture/skydiver_Clothes.webp') };
+    uniforms = shader.uniforms;
+
     shader.vertexShader = `
       uniform float uTime;
       uniform sampler2D uClothes;
@@ -214,6 +216,7 @@ const material = new THREE.MeshStandardMaterial({
 
 
 
+
   skinnedMesh.traverse(function(child) {
     if (child.isMesh) {
       child.material = material;
@@ -225,7 +228,7 @@ const material = new THREE.MeshStandardMaterial({
 
  
 
-  skinnedMesh.position.set(0, 25,1);
+  skinnedMesh.position.set(0, 0,1);
   // skinnedMesh.rotation.x = 30
 
 
@@ -324,7 +327,7 @@ let translationY = 0.00000009; // Adjust this value to control the translation a
 
 const tick = () =>
 {
-  const elapsedTime = clock.getElapsedTime() * timeScale
+  const elapsedTime = clock.getElapsedTime() 
   const deltaTime =  (1/ timeScale ) * (elapsedTime   - previousTime) ;
   previousTime = elapsedTime 
  console.log(deltaTime);
@@ -333,6 +336,7 @@ const tick = () =>
   mixer.update(deltaTime)
  }
  
+
 
 
   // Calculate the vertical velocity at the current time
@@ -346,7 +350,7 @@ const tick = () =>
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-  skinnedMesh.position.y -= Vy*0.0010;
+  //skinnedMesh.position.y -= Vy*0.0010;
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
    terminalVelocity.textContent = Vy.toFixed(2)
@@ -355,7 +359,11 @@ if (skinnedMesh) {
 
 }
 
- 
+
+  // update shader uniform
+  if (uniforms) {
+    uniforms.uTime.value = clock.getElapsedTime();
+  }
 // Update wind effect
 // windShapes.forEach(shape => shape.update(camera));
 
