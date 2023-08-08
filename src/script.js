@@ -25,13 +25,7 @@ skyDiverTextureMetallic.flipY = false;
 skyDiverTextureNormal.flipY = false;
 skyDiverTextureClothes.flipY = false;
 
-const m = 80; // Mass of the parachuter (in kg)
-const g = 9.81 // Acceleration due to gravity (m/s^2)
-const p = 1.2 // Air density (in kg/m^3)
-const Cd =  0.294; // Drag coefficient
-const A = 1.0; // Cross-sectional area of the parachuter (in m^2)
-const k = 0.25; // Damping coefficient 
-let v0; // Velocity at the time of the parachute deployment
+
 
 
 
@@ -42,6 +36,7 @@ let v0; // Velocity at the time of the parachute deployment
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 // defining the values of html elements
+const deltaTime= document.getElementById("delta-time");
 const terminalVelocity= document.getElementById(
   "terminal-velocity",
 );
@@ -76,7 +71,6 @@ window.addEventListener('resize', () =>
 })
 
 
-
 /**
  * Camera
  */
@@ -85,8 +79,6 @@ const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 
 camera.position.x = 0
 camera.position.y = 0
 camera.position.z = 3;
-
-// camera.rotation.y = 90
 
 myscene.add(camera)
 
@@ -101,14 +93,6 @@ controls.keys = {
 }
 controls.listenToKeyEvents(window);
 controls.keyPanSpeed=300;
-// This will enable the zoom, rotate, and pan operations
-controls.enableZoom = true;
-controls.enableRotate = true;
-controls.enablePan = true;
-
-// This will add damping (inertia) to the controls
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
 
 /**
  * Renderer
@@ -120,32 +104,14 @@ renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 
-var loader = new THREE.CubeTextureLoader();
-
-var path = './'; // replace with your path
-var format = '.png'; // replace with your format
-var urls = [
-  path + 'px' + format, path + 'nx' + format,
-  path + 'py' + format, path + 'ny' + format,
-  path + 'pz' + format, path + 'nz' + format
-];
-console.log(urls);
-loader.load(urls, function (textureCube) {
-
-  textureCube.needsUpdate = true;
-
-  // set the global scene background
-  myscene.background = textureCube;
-});
-
 
 //Create an instance of the World class
-// const world = new World();
+const world = new World();
 
-// world.loadTexture('./sky-texture.jpg');
-// world.createMesh(60, 480, 480); // Size of the skybox
+world.loadTexture('./sky-texture.jpg');
+world.createMesh(30, 240, 240); // Size of the skybox
 
-// myscene.add(world.mesh);
+myscene.add(world.mesh);
 
 /**
   Skydiver_model
@@ -163,8 +129,6 @@ let mixer = null
 
   let parachute; // Declare 'parachute' in the outer scope
 
-  let material;
-  let uniforms
 
     // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
@@ -180,39 +144,19 @@ actions.forEach(action => {
   action.play();
 });
 
- material = new THREE.MeshStandardMaterial({
-  side: THREE.DoubleSide,
-  map: skyDiverTextureBaseColor,
-  roughnessMap: skyDiverTextureRoughness,
-  metalnessMap: skyDiverTextureMetallic,
-  normalMap: skyDiverTextureNormal,
-  normalScale: new THREE.Vector2(-0.2, 0.2),
-  envMapIntensity: 0.8,
-  toneMapped: false,
-  onBeforeCompile: (shader) => {
-    shader.uniforms.uTime = { value: 0 };
-    shader.uniforms.uClothes = { value : skyDiverTextureClothes };
-    uniforms = shader.uniforms;
 
-    shader.vertexShader = `
-      uniform float uTime;
-      uniform sampler2D uClothes;
-      ${shader.vertexShader}
-    `;
-    shader.vertexShader = shader.vertexShader.replace(
-      `#include <begin_vertex>`,
-      `
-      vec3 clothesTexture = vec3(texture2D(uClothes, vUv));
-      float circleTime = 2.0;
-      float amplitude = 30.0;
-      float circleTimeParam = mod(uTime, circleTime);
-      vec3 transformed = vec3( position );
-      transformed.y += min(clothesTexture.y * sin( circleTimeParam * amplitude * (PI  / circleTime)) * 0.025, 0.5);
-      `
-    );
-  }
-});
+   //load the textures on the model
+const material = new THREE.MeshStandardMaterial({
+    side: THREE.DoubleSide,
+    map: skyDiverTextureBaseColor,
+    roughnessMap: skyDiverTextureRoughness,
+    metalnessMap: skyDiverTextureMetallic,
+    normalMap: skyDiverTextureNormal,
+    normalScale: new THREE.Vector2(-0.2, 0.2),
+    envMapIntensity: 0.8,
+    toneMapped: false,
 
+  });
 
 
 
@@ -228,7 +172,7 @@ actions.forEach(action => {
 
  
 
-  skinnedMesh.position.set(0, 0,1);
+  skinnedMesh.position.set(0, 10,0);
   // skinnedMesh.rotation.x = 30
 
 
@@ -249,9 +193,9 @@ const physics = new Physics(-9.81, 0.01);
 
 
 
-// //create an object and define the amount
-// const windShapes = Array.from({length: 130}, () => new WindShape());
-// windShapes.forEach(shape => myscene.add(shape.mesh));
+//create an object and define the amount
+const windShapes = Array.from({length: 130}, () => new WindShape());
+windShapes.forEach(shape => myscene.add(shape.mesh));
 
 
  
@@ -260,58 +204,44 @@ const physics = new Physics(-9.81, 0.01);
 var ambientLight = new THREE.AmbientLight( 0xffffff, 0.2 );
 myscene.add( ambientLight );
 const directionalLight1 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight1.position.set(-2, -2, 2);
+directionalLight1.position.set(-10, -300, 0);
 myscene.add(directionalLight1);
 
 const directionalLight2 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight2.position.set(2, 2, 2);
+directionalLight2.position.set(10, 300, 0);
 myscene.add(directionalLight2);
 
 
+const m = 75 ; // Mass of the parachuter (in kg)
+const g = 9.81; // Acceleration due to gravity (m/s^2)
+const p = 1.225 // Air density (in kg/m^3)
+const k = 0.25; // Damping coefficient 
+let v0; // Velocity at the time of the parachute deployment
+let Cd = 1.2;  // Drag coefficient without parachute
+let A = 0.7;   // Reference area without parachute (m²)
+let Cd_parachute = 1.2;  // Drag coefficient with parachute
+let A_parachute = 25;  // Reference area with parachute (m²)
 function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
- 
+let Vy;
 
-  let Vy;
-
-  if (parachuteDeployed) {
-    // For small Reynolds number (when parachute is deployed)
-    Vy = (m * g / k) + (v0 - m * g / k) * Math.exp(-k/m * deltaTime);
-    if (deltaTime % 1 === 0) { // Only print once per second to limit output
-      console.log(`t:${deltaTime}s, Vy:${Vy.toFixed(2)}m/s`);
-    }
-      deltaTime = 0; // Reset the time difference after parachute deployment
-  } else {
+if (parachuteDeployed) {
+    // Use the same calculations as for large Reynolds number (free fall), but with updated Cd and A
+    const term1 = Math.sqrt(2 * m * g / (p * Cd_parachute * A_parachute));
+    const term2 = Math.sqrt((p * Cd_parachute * A_parachute * g / (2 * m)) * deltaTime);
+    Vy = term1 * Math.tanh(term2);
+} else {
     // Use previous calculations for large Reynolds number (free fall)
     const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
     const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
     Vy = term1 * Math.tanh(term2);
- 
-  }
-  v0 = Vy; // Save the current velocity to be used as initial velocity in next calculation
+}
+v0 = Vy; // Save the current velocity to be used as initial velocity in next calculation
 
-  return Vy;
+return Vy;
+
 }
 
 
-
-//with the air altitude
-function calculateVerticalVelocity3(deltaTime, altitude,) {
-  let Vy
-  // constants
-  const p0 = 1.225; // air density at sea level in kg/m^3
-  const h = 7500; // scale height in m
-
-  // calculate air density at given altitude
-  const p = p0 * Math.exp(-altitude / h);
-
-  const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
-  const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
-  Vy = term1 * Math.tanh(term2);
-  if (deltaTime % 1 === 0) { // Only print once per second to limit output
-    console.log(`t:${deltaTime}s, Vy:${Vy.toFixed(2)}m/s`);
-  }  
-  return Vy;
-}
 
 
 
@@ -320,17 +250,16 @@ function calculateVerticalVelocity3(deltaTime, altitude,) {
  * Animate
  */
 const clock = new THREE.Clock()
-const timeScale = 50; // Change this to speed up or slow down the simulation
-let previousTime = 0;
+let previousTime = 0
 let translationY = 0.00000009; // Adjust this value to control the translation amount
 
 
 const tick = () =>
 {
-  const elapsedTime = clock.getElapsedTime() * timeScale
-  const deltaTime =  (1/ timeScale ) * (elapsedTime   - previousTime) ;
-  previousTime = elapsedTime 
- console.log(deltaTime);
+  const elapsedTime = clock.getElapsedTime();
+  const deltaTime = elapsedTime   - previousTime;
+  previousTime = elapsedTime
+ 
  if(mixer !==null)
  {
   mixer.update(deltaTime)
@@ -338,36 +267,30 @@ const tick = () =>
  
 
 
-
   // Calculate the vertical velocity at the current time
   let Vy;
-  // if (parachute) {
-  //    Vy = calculateVerticalVelocity2(elapsedTime, parachute.parachuteDeployed)
-  // }
-  // else{
+  if (parachute) {
+     Vy = calculateVerticalVelocity2(elapsedTime, parachute.parachuteDeployed)
+  }
+  else{
      Vy = calculateVerticalVelocity2(elapsedTime, false)
-  // }
+  }
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-    //skinnedMesh.position.y -= Vy*0.0010;
+   skinnedMesh.position.y -= Vy*0.0010;
+   
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
    terminalVelocity.textContent = Vy.toFixed(2)
    console.log(" Vy :", Vy);
-
-   if (uniforms) {
-    uniforms.uTime.value = clock.getElapsedTime()
-  }
   //  updateOverlay();
 
 }
 
-
-  // update shader uniform
-  
+ 
 // Update wind effect
-// windShapes.forEach(shape => shape.update(camera));
+windShapes.forEach(shape => shape.update(camera));
 
 
 
@@ -383,7 +306,7 @@ if (skinnedMesh) {
 if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists before accessing 'parachuteDeployed'
   window.addEventListener('keydown', function(event) {
     if(event.key === 'p') {
-      parachute.deployParachute();
+      parachute.deployParachute(m, g, p, Cd_parachute, A_parachute, Vy);
     }
   });
 }
