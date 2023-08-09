@@ -126,6 +126,9 @@ let mixer = null
 
   // Load the GLTF model
   let skinnedMesh;
+// Define the ground and parachuter
+let ground = {x: 100, y: 100, width: 1000, height: 1000}; // Adjust to match your ground size and position
+let parachuter = {x: 500, y: 1000, width: 50, height: 50, velocity: 0}; // Adjust to match your parachute size and initial position
 
   let parachute; // Declare 'parachute' in the outer scope
 
@@ -211,8 +214,52 @@ const directionalLight2 = new THREE.DirectionalLight(0xffffff, 2);
 directionalLight2.position.set(10, 300, 0);
 myscene.add(directionalLight2);
 
+// function collision(a, b) {
+//   return a.x < b.x + b.width &&
+//          a.x + a.width > b.x &&
+//          a.y < b.y + b.height &&
+//          a.y + a.height > b.y;
+// }
 
-const m = 75 ; // Mass of the parachuter (in kg)
+// Define safeVelocity and calculateInjurySeverity function
+const safeVelocity = 10 ;  // Maximum safe landing velocity
+
+function calculateInjurySeverity(velocity) {
+  if (velocity <= safeVelocity + 10) {
+    return 'Minor injuries, possible fractures.';
+  } else if (velocity <= safeVelocity + 20) {
+    return 'Severe injuries, likely multiple fractures and possible spinal injuries.';
+  } else {
+    return 'Critical injuries, likely spinal injuries and possible brain damage.';
+  }
+}
+
+// Define checkLanding function
+function checkLanding(parachuter, ground) {
+  if (parachuter.y <= -32) {
+    const messageDiv = document.getElementById('safeMessage');
+   
+    if (parachuter.velocity <= safeVelocity) {
+      // Change color to green for safe landing
+   
+     
+      messageDiv.style.display = 'block';
+      messageDiv.textContent = `The parachuter landed safely.`;
+ 
+    } else {
+      const messageDiv = document.getElementById('injuryMessage');
+ 
+   //   console.log('not good')
+      const injurySeverity = calculateInjurySeverity(parachuter.velocity);
+  
+      
+      messageDiv.style.display = 'block';
+      messageDiv.textContent = `The parachuter sustained injuries. Severity: ${injurySeverity}`;
+    }
+  }
+}
+
+const m = 125 ; // Mass of the parachuter (in kg)
 const g = 9.81; // Acceleration due to gravity (m/s^2)
 const p = 1.225 // Air density (in kg/m^3)
 const k = 0.25; // Damping coefficient 
@@ -278,12 +325,16 @@ const tick = () =>
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-   skinnedMesh.position.y -= Vy*0.0010;
-   
+   skinnedMesh.position.y -= Vy*0.001;
+   // Update the velocity and position of the parachuter as it is falling
+   parachuter.y = skinnedMesh.position.y;
+   parachuter.velocity = Vy;
+   // Check if the parachuter has landed and log the result
+   checkLanding(parachuter, ground);
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
    terminalVelocity.textContent = Vy.toFixed(2)
-   console.log(" Vy :", Vy);
+   console.log(" Vy :",  parachuter.y);
   //  updateOverlay();
 
 }
