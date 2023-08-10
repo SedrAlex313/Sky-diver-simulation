@@ -25,12 +25,15 @@ skyDiverTextureMetallic.flipY = false;
 skyDiverTextureNormal.flipY = false;
 skyDiverTextureClothes.flipY = false;
 
-const m = 80; // Mass of the parachuter (in kg)
+const m = 125; // Mass of the parachuter (in kg)
 const g = 9.81 // Acceleration due to gravity (m/s^2)
-const p = 1.2 // Air density (in kg/m^3)
-const Cd =  0.294; // Drag coefficient
-const A = 1.0; // Cross-sectional area of the parachuter (in m^2)
+const p = 1.225 // Air density (in kg/m^3)
+const Cd =  1.2; // Drag coefficient
+const A = 0.7; // Cross-sectional area of the parachuter (in m^2)
 const k = 0.25; // Damping coefficient 
+let A_parachute = 25;  // Reference area with parachute (m²)
+let Cd_parachute = 1.2;  // Drag coefficient with parachute
+
 let v0; // Velocity at the time of the parachute deployment
 
 
@@ -101,14 +104,6 @@ controls.keys = {
 }
 controls.listenToKeyEvents(window);
 controls.keyPanSpeed=300;
-// This will enable the zoom, rotate, and pan operations
-controls.enableZoom = true;
-controls.enableRotate = true;
-controls.enablePan = true;
-
-// This will add damping (inertia) to the controls
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
 
 /**
  * Renderer
@@ -139,6 +134,9 @@ loader.load(urls, function (textureCube) {
 });
 
 
+
+
+
 //Create an instance of the World class
 // const world = new World();
 
@@ -162,6 +160,12 @@ let mixer = null
   let skinnedMesh;
 
   let parachute; // Declare 'parachute' in the outer scope
+
+
+  // Define the ground and parachuter
+let ground = {x: 100, y: 100, width: 1000, height: 1000}; // Adjust to match your ground size and position
+let parachuter = {x: 500, y: 1000, width: 50, height: 50, velocity: 0}; // Adjust to match your parachute size and initial position
+
 
   let material;
   let uniforms
@@ -226,6 +230,8 @@ actions.forEach(action => {
 
   
 
+  
+
  
 
   skinnedMesh.position.set(0, 0,1);
@@ -268,18 +274,58 @@ directionalLight2.position.set(2, 2, 2);
 myscene.add(directionalLight2);
 
 
+// Define safeVelocity and calculateInjurySeverity function
+const safeVelocity = 10 ;  // Maximum safe landing velocity
+
+function calculateInjurySeverity(velocity) {
+  if (velocity <= safeVelocity + 10) {
+    return 'Minor injuries, possible fractures.';
+  } else if (velocity <= safeVelocity + 20) {
+    return 'Severe injuries, likely multiple fractures and possible spinal injuries.';
+  } else {
+    return 'Critical injuries, likely spinal injuries and possible brain damage.';
+  }
+}
+
+// Define checkLanding function
+function checkLanding(parachuter, ground) {
+  if (parachuter.y <= -32) {
+    const messageDiv = document.getElementById('safeMessage');
+   
+    if (parachuter.velocity <= safeVelocity) {
+      // Change color to green for safe landing
+   
+     
+      messageDiv.style.display = 'block';
+      messageDiv.textContent = `The parachuter landed safely.`;
+ 
+    } else {
+      const messageDiv = document.getElementById('injuryMessage');
+ 
+   //   console.log('not good')
+      const injurySeverity = calculateInjurySeverity(parachuter.velocity);
+  
+      
+      messageDiv.style.display = 'block';
+      messageDiv.textContent = `The parachuter sustained injuries. Severity: ${injurySeverity}`;
+    }
+  }
+}
+
 function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
  
 
   let Vy;
 
   if (parachuteDeployed) {
-    // For small Reynolds number (when parachute is deployed)
-    Vy = (m * g / k) + (v0 - m * g / k) * Math.exp(-k/m * deltaTime);
-    if (deltaTime % 1 === 0) { // Only print once per second to limit output
-      console.log(`t:${deltaTime}s, Vy:${Vy.toFixed(2)}m/s`);
-    }
-      deltaTime = 0; // Reset the time difference after parachute deployment
+      // Calculate the new terminal velocity when the parachute is deployed
+  const term1_parachute = Math.sqrt(2 * m * g / (p * Cd_parachute * A_parachute));
+  const term2_parachute = Math.sqrt((p * Cd_parachute * A_parachute * g / (2 * m)) * deltaTime);
+  const newTerminalVelocity = term1_parachute * Math.tanh(term2_parachute);
+
+
+
+    
   } else {
     // Use previous calculations for large Reynolds number (free fall)
     const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
@@ -287,31 +333,14 @@ function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
     Vy = term1 * Math.tanh(term2);
  
   }
-  v0 = Vy; // Save the current velocity to be used as initial velocity in next calculation
 
+  v0 = Vy ; // Save the current velocity to be used as initial velocity in next calculation
   return Vy;
 }
 
 
 
-//with the air altitude
-function calculateVerticalVelocity3(deltaTime, altitude,) {
-  let Vy
-  // constants
-  const p0 = 1.225; // air density at sea level in kg/m^3
-  const h = 7500; // scale height in m
 
-  // calculate air density at given altitude
-  const p = p0 * Math.exp(-altitude / h);
-
-  const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
-  const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
-  Vy = term1 * Math.tanh(term2);
-  if (deltaTime % 1 === 0) { // Only print once per second to limit output
-    console.log(`t:${deltaTime}s, Vy:${Vy.toFixed(2)}m/s`);
-  }  
-  return Vy;
-}
 
 
 
@@ -324,13 +353,15 @@ const timeScale = 50; // Change this to speed up or slow down the simulation
 let previousTime = 0;
 let translationY = 0.00000009; // Adjust this value to control the translation amount
 
+const delta = clock.getDelta();
+
+
 
 const tick = () =>
 {
   const elapsedTime = clock.getElapsedTime() * timeScale
   const deltaTime =  (1/ timeScale ) * (elapsedTime   - previousTime) ;
   previousTime = elapsedTime 
- console.log(deltaTime);
  if(mixer !==null)
  {
   mixer.update(deltaTime)
@@ -340,21 +371,30 @@ const tick = () =>
 
 
   // Calculate the vertical velocity at the current time
-  let Vy;
-  // if (parachute) {
-  //    Vy = calculateVerticalVelocity2(elapsedTime, parachute.parachuteDeployed)
-  // }
-  // else{
+  let Vy
+if (parachute) {
+    Vy = calculateVerticalVelocity2(elapsedTime, parachute.parachuteDeployed)
+}
+
+ else{
      Vy = calculateVerticalVelocity2(elapsedTime, false)
-  // }
+}
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-    //skinnedMesh.position.y -= Vy*0.0010;
+ skinnedMesh.position.y -= Vy*0.0010;
+  // Update the velocity and position of the parachuter as it is falling
+  parachuter.y = skinnedMesh.position.y;
+  parachuter.velocity = Vy;
+  // Check if the parachuter has landed and log the result
+  checkLanding(parachuter, ground);
+  //update values
+
+
+
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
    terminalVelocity.textContent = Vy.toFixed(2)
-   console.log(" Vy :", Vy);
 
    if (uniforms) {
     uniforms.uTime.value = clock.getElapsedTime()
@@ -383,12 +423,13 @@ if (skinnedMesh) {
 if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists before accessing 'parachuteDeployed'
   window.addEventListener('keydown', function(event) {
     if(event.key === 'p') {
-      parachute.deployParachute();
+      parachute.deployParachute(m, g, p, Cd_parachute, A_parachute, Vy);
+     
     }
   });
 }
 
-
+// 
 
 
     // Call tick again on the next frame
@@ -396,3 +437,15 @@ if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists 
 }
 
 tick()
+
+
+
+
+
+ 
+    
+
+ 
+ 
+
+ 
