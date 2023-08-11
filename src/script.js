@@ -123,7 +123,7 @@ const gltfloader = new GLTFLoader();
 gltfloader.setDRACOLoader(dracoLoader);
 
 let mixer = null
-
+let uniforms;
   // Load the GLTF model
   let skinnedMesh;
 // Define the ground and parachuter
@@ -157,8 +157,28 @@ const material = new THREE.MeshStandardMaterial({
     normalMap: skyDiverTextureNormal,
     normalScale: new THREE.Vector2(-0.2, 0.2),
     envMapIntensity: 0.8,
-    toneMapped: false,
-
+    onBeforeCompile: (shader) => {
+      shader.uniforms.uTime = { value: 0 };
+      shader.uniforms.uClothes = { value : skyDiverTextureClothes };
+      uniforms = shader.uniforms;
+  
+      shader.vertexShader = `
+        uniform float uTime;
+        uniform sampler2D uClothes;
+        ${shader.vertexShader}
+      `;
+      shader.vertexShader = shader.vertexShader.replace(
+        `#include <begin_vertex>`,
+        `
+        vec3 clothesTexture = vec3(texture2D(uClothes, vUv));
+        float circleTime = 2.0;
+        float amplitude = 30.0;
+        float circleTimeParam = mod(uTime, circleTime);
+        vec3 transformed = vec3( position );
+        transformed.y += min(clothesTexture.y * sin( circleTimeParam * amplitude * (PI  / circleTime)) * 0.025, 0.5);
+        `
+      );
+    }
   });
 
 
@@ -245,7 +265,8 @@ function checkLanding(parachuter, ground) {
      
       messageDiv.style.display = 'block';
       messageDiv.textContent = `The parachuter landed safely.`;
- 
+   // Reload the page after 3 seconds
+   // 3000ms = 3 seconds
     } else {
       const messageDiv = document.getElementById('injuryMessage');
  
@@ -255,36 +276,66 @@ function checkLanding(parachuter, ground) {
       
       messageDiv.style.display = 'block';
       messageDiv.textContent = `The parachuter sustained injuries. Severity: ${injurySeverity}`;
+      // Reload the page after 3 seconds
+   
     }
   }
 }
-
-const m = 125 ; // Mass of the parachuter (in kg)
+let dec=0.1;
+const m = 80; // Mass of the parachuter (in kg)
 const g = 9.81; // Acceleration due to gravity (m/s^2)
 const p = 1.225 // Air density (in kg/m^3)
 const k = 0.25; // Damping coefficient 
 let v0; // Velocity at the time of the parachute deployment
-let Cd = 1.2;  // Drag coefficient without parachute
-let A = 0.7;   // Reference area without parachute (m²)
+let Cd = 0.7;  // Drag coefficient without parachute
+let A = 1;   // Reference area without parachute (m²)
 let Cd_parachute = 1.2;  // Drag coefficient with parachute
 let A_parachute = 25;  // Reference area with parachute (m²)
-function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
+let Z;
+let V;
 let Vy;
+let Vy_p;
 
-if (parachuteDeployed) {
-    // Use the same calculations as for large Reynolds number (free fall), but with updated Cd and A
-    const term1 = Math.sqrt(2 * m * g / (p * Cd_parachute * A_parachute));
-    const term2 = Math.sqrt((p * Cd_parachute * A_parachute * g / (2 * m)) * deltaTime);
-    Vy = term1 * Math.tanh(term2);
-} else {
+function calculateVerticalVelocity2(deltaTime, parachuteDeployed,min) {
+
+  
+
+if (!parachuteDeployed){
     // Use previous calculations for large Reynolds number (free fall)
     const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
     const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
     Vy = term1 * Math.tanh(term2);
+    V=Vy;
 }
-v0 = Vy; // Save the current velocity to be used as initial velocity in next calculation
+    
 
-return Vy;
+    // Use the same calculations as for large Reynolds number (free fall), but with updated Cd and A
+    const term1_p = Math.sqrt(2 * m * g / (p * Cd_parachute * A_parachute));
+    const term2_p = Math.sqrt((p * Cd_parachute * A_parachute * g / (2 * m)) * deltaTime);
+    Vy_p = term1_p * Math.tanh(term2_p);
+
+  
+if (parachuteDeployed) {
+  if (V<=Vy_p) {
+    Z=3;
+    return Vy_p;
+  }else
+  {
+    if (V<=10) {
+      V-=0.005
+      Z=4;
+    }else{
+    Z=2;
+    V-=min}
+
+    return V;
+  }
+
+} else {
+  Z=1;
+  return Vy;
+}
+
 
 }
 
@@ -315,26 +366,33 @@ const tick = () =>
 
 
   // Calculate the vertical velocity at the current time
-  let Vy;
-  if (parachute) {
-     Vy = calculateVerticalVelocity2(elapsedTime, parachute.parachuteDeployed)
+  
+  
+  let VFinal;
+  
+  if (parachute && parachute.parachuteDeployed) {
+    if (dec >= 0 ) {
+      dec-=0.00005;
+    }
+   
+    VFinal = calculateVerticalVelocity2(elapsedTime, parachute.parachuteDeployed,dec)
   }
   else{
-     Vy = calculateVerticalVelocity2(elapsedTime, false)
+    VFinal = calculateVerticalVelocity2(elapsedTime, false,0)
   }
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-   skinnedMesh.position.y -= Vy*0.001;
+   skinnedMesh.position.y -= VFinal*0.001;
    // Update the velocity and position of the parachuter as it is falling
    parachuter.y = skinnedMesh.position.y;
-   parachuter.velocity = Vy;
+   parachuter.velocity = VFinal;
    // Check if the parachuter has landed and log the result
    checkLanding(parachuter, ground);
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
-   terminalVelocity.textContent = Vy.toFixed(2)
-   console.log(" Vy :",  parachuter.y);
+   terminalVelocity.textContent = VFinal.toFixed(2)
+   console.log(" Z :", Z,'dec:',dec);
   //  updateOverlay();
 
 }
@@ -343,7 +401,9 @@ if (skinnedMesh) {
 // Update wind effect
 windShapes.forEach(shape => shape.update(camera));
 
-
+if (uniforms) {
+  uniforms.uTime.value = clock.getElapsedTime()
+}
 
     // Update controls
     controls.update()
@@ -357,7 +417,8 @@ windShapes.forEach(shape => shape.update(camera));
 if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists before accessing 'parachuteDeployed'
   window.addEventListener('keydown', function(event) {
     if(event.key === 'p') {
-      parachute.deployParachute(m, g, p, Cd_parachute, A_parachute, Vy);
+    parachute.deployParachute(m, g, p, Cd_parachute, A_parachute, VFinal);
+   // console.log( parachute.calculateTension(m, g, p, Cd_parachute, A_parachute, VFinal));
     }
   });
 }
