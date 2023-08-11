@@ -99,6 +99,14 @@ controls.keys = {
 }
 controls.listenToKeyEvents(window);
 controls.keyPanSpeed=300;
+// This will enable the zoom, rotate, and pan operations
+controls.enableZoom = true;
+controls.enableRotate = true;
+controls.enablePan = true;
+
+// This will add damping (inertia) to the controls
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
 
 /**
  * Renderer
@@ -132,8 +140,8 @@ loader.load(urls, function (textureCube) {
 //Create an instance of the World class
 const world = new World();
 
-world.loadTexture('./sky-texture.jpg');
-world.createMesh(30, 240, 240); // Size of the skybox
+// world.loadTexture('./sky-texture.jpg');
+// world.createMesh(60, 480, 480); // Size of the skybox
 
 myscene.add(world.mesh);
 
@@ -153,12 +161,8 @@ let mixer = null
 
   let parachute; // Declare 'parachute' in the outer scope
 
-
-  // Define the ground and parachuter
-let ground = {x: 100, y: 100, width: 1000, height: 1000}; // Adjust to match your ground size and position
-let parachuter = {x: 500, y: 1000, width: 50, height: 50, velocity: 0}; // Adjust to match your parachute size and initial position
-
-
+  let material;
+  let uniforms
 
     // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
@@ -174,19 +178,38 @@ actions.forEach(action => {
   action.play();
 });
 
+ material = new THREE.MeshStandardMaterial({
+  side: THREE.DoubleSide,
+  map: skyDiverTextureBaseColor,
+  roughnessMap: skyDiverTextureRoughness,
+  metalnessMap: skyDiverTextureMetallic,
+  normalMap: skyDiverTextureNormal,
+  normalScale: new THREE.Vector2(-0.2, 0.2),
+  envMapIntensity: 0.8,
+  toneMapped: false,
+  onBeforeCompile: (shader) => {
+    shader.uniforms.uTime = { value: 0 };
+    shader.uniforms.uClothes = { value : skyDiverTextureClothes };
+    uniforms = shader.uniforms;
 
-   //load the textures on the model
-const material = new THREE.MeshStandardMaterial({
-    side: THREE.DoubleSide,
-    map: skyDiverTextureBaseColor,
-    roughnessMap: skyDiverTextureRoughness,
-    metalnessMap: skyDiverTextureMetallic,
-    normalMap: skyDiverTextureNormal,
-    normalScale: new THREE.Vector2(-0.2, 0.2),
-    envMapIntensity: 0.8,
-    toneMapped: false,
-
-  });
+    shader.vertexShader = `
+      uniform float uTime;
+      uniform sampler2D uClothes;
+      ${shader.vertexShader}
+    `;
+    shader.vertexShader = shader.vertexShader.replace(
+      `#include <begin_vertex>`,
+      `
+      vec3 clothesTexture = vec3(texture2D(uClothes, vUv));
+      float circleTime = 2.0;
+      float amplitude = 30.0;
+      float circleTimeParam = mod(uTime, circleTime);
+      vec3 transformed = vec3( position );
+      transformed.y += min(clothesTexture.y * sin( circleTimeParam * amplitude * (PI  / circleTime)) * 0.025, 0.5);
+      `
+    );
+  }
+});
 
 
 
@@ -245,6 +268,9 @@ myscene.add(directionalLight2);
 
 
 // Define safeVelocity and calculateInjurySeverity function
+
+
+// Define safeVelocity and calculateInjurySeverity function
 const safeVelocity = 10 ;  // Maximum safe landing velocity
 
 function calculateInjurySeverity(velocity) {
@@ -282,15 +308,7 @@ function checkLanding(parachuter, ground) {
   }
 }
 
-const m = 75 ; // Mass of the parachuter (in kg)
-const g = 9.81; // Acceleration due to gravity (m/s^2)
-const p = 1.225 // Air density (in kg/m^3)
-const k = 0.25; // Damping coefficient 
-let v0; // Velocity at the time of the parachute deployment
-let Cd = 1.2;  // Drag coefficient without parachute
-let A = 0.7;   // Reference area without parachute (m²)
-let Cd_parachute = 1.2;  // Drag coefficient with parachute
-let A_parachute = 25;  // Reference area with parachute (m²)
+
 function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
 let Vy;
 
