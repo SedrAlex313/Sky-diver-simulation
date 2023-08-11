@@ -42,6 +42,7 @@ let v0; // Velocity at the time of the parachute deployment
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 // defining the values of html elements
+const deltaTime= document.getElementById("delta-time");
 const terminalVelocity= document.getElementById(
   "terminal-velocity",
 );
@@ -76,7 +77,6 @@ window.addEventListener('resize', () =>
 })
 
 
-
 /**
  * Camera
  */
@@ -85,8 +85,6 @@ const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 
 camera.position.x = 0
 camera.position.y = 0
 camera.position.z = 3;
-
-// camera.rotation.y = 90
 
 myscene.add(camera)
 
@@ -109,6 +107,8 @@ controls.enablePan = true;
 // This will add damping (inertia) to the controls
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
+
+
 
 /**
  * Renderer
@@ -143,7 +143,7 @@ loader.load(urls, function (textureCube) {
 // const world = new World();
 
 // world.loadTexture('./sky-texture.jpg');
-// world.createMesh(60, 480, 480); // Size of the skybox
+// world.createMesh(30, 240, 240); // Size of the skybox
 
 // myscene.add(world.mesh);
 
@@ -163,9 +163,14 @@ let mixer = null
 
   let parachute; // Declare 'parachute' in the outer scope
 
-  let material;
-  let uniforms
 
+  // Define the ground and parachuter
+let ground = {x: 100, y: 100, width: 1000, height: 1000}; // Adjust to match your ground size and position
+let parachuter = {x: 500, y: 1000, width: 50, height: 50, velocity: 0}; // Adjust to match your parachute size and initial position
+
+
+let material;
+  let uniforms
     // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
    skinnedMesh = gltf.scene;
@@ -180,39 +185,41 @@ actions.forEach(action => {
   action.play();
 });
 
- material = new THREE.MeshStandardMaterial({
-  side: THREE.DoubleSide,
-  map: skyDiverTextureBaseColor,
-  roughnessMap: skyDiverTextureRoughness,
-  metalnessMap: skyDiverTextureMetallic,
-  normalMap: skyDiverTextureNormal,
-  normalScale: new THREE.Vector2(-0.2, 0.2),
-  envMapIntensity: 0.8,
-  toneMapped: false,
-  onBeforeCompile: (shader) => {
-    shader.uniforms.uTime = { value: 0 };
-    shader.uniforms.uClothes = { value : skyDiverTextureClothes };
-    uniforms = shader.uniforms;
 
-    shader.vertexShader = `
-      uniform float uTime;
-      uniform sampler2D uClothes;
-      ${shader.vertexShader}
-    `;
-    shader.vertexShader = shader.vertexShader.replace(
-      `#include <begin_vertex>`,
-      `
-      vec3 clothesTexture = vec3(texture2D(uClothes, vUv));
-      float circleTime = 2.0;
-      float amplitude = 30.0;
-      float circleTimeParam = mod(uTime, circleTime);
-      vec3 transformed = vec3( position );
-      transformed.y += min(clothesTexture.y * sin( circleTimeParam * amplitude * (PI  / circleTime)) * 0.025, 0.5);
-      `
-    );
-  }
-});
+   //load the textures on the model
+const material = new THREE.MeshStandardMaterial({
+    side: THREE.DoubleSide,
+    map: skyDiverTextureBaseColor,
+    roughnessMap: skyDiverTextureRoughness,
+    metalnessMap: skyDiverTextureMetallic,
+    normalMap: skyDiverTextureNormal,
+    normalScale: new THREE.Vector2(-0.2, 0.2),
+    envMapIntensity: 0.8,
+    toneMapped: false,
+    onBeforeCompile: (shader) => {
+      shader.uniforms.uTime = { value: 0 };
+      shader.uniforms.uClothes = { value : skyDiverTextureClothes };
+      uniforms = shader.uniforms;
+  
+      shader.vertexShader = `
+        uniform float uTime;
+        uniform sampler2D uClothes;
+        ${shader.vertexShader}
+      `;
+      shader.vertexShader = shader.vertexShader.replace(
+        `#include <begin_vertex>`,
+        `
+        vec3 clothesTexture = vec3(texture2D(uClothes, vUv));
+        float circleTime = 2.0;
+        float amplitude = 30.0;
+        float circleTimeParam = mod(uTime, circleTime);
+        vec3 transformed = vec3( position );
+        transformed.y += min(clothesTexture.y * sin( circleTimeParam * amplitude * (PI  / circleTime)) * 0.025, 0.5);
+        `
+      );
+    }
 
+  });
 
 
 
@@ -226,9 +233,11 @@ actions.forEach(action => {
 
   
 
+  
+
  
 
-  skinnedMesh.position.set(0, 0,1);
+  skinnedMesh.position.set(0, 10,0);
   // skinnedMesh.rotation.x = 30
 
 
@@ -249,9 +258,9 @@ const physics = new Physics(-9.81, 0.01);
 
 
 
-// //create an object and define the amount
-// const windShapes = Array.from({length: 130}, () => new WindShape());
-// windShapes.forEach(shape => myscene.add(shape.mesh));
+//create an object and define the amount
+const windShapes = Array.from({length: 130}, () => new WindShape());
+windShapes.forEach(shape => myscene.add(shape.mesh));
 
 
  
@@ -260,18 +269,54 @@ const physics = new Physics(-9.81, 0.01);
 var ambientLight = new THREE.AmbientLight( 0xffffff, 0.2 );
 myscene.add( ambientLight );
 const directionalLight1 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight1.position.set(-2, -2, 2);
+directionalLight1.position.set(-10, -300, 0);
 myscene.add(directionalLight1);
 
 const directionalLight2 = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight2.position.set(2, 2, 2);
+directionalLight2.position.set(10, 300, 0);
 myscene.add(directionalLight2);
 
 
-function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
- 
+// Define safeVelocity and calculateInjurySeverity function
+const safeVelocity = 10 ;  // Maximum safe landing velocity
 
-  let Vy;
+function calculateInjurySeverity(velocity) {
+  if (velocity <= safeVelocity + 10) {
+    return 'Minor injuries, possible fractures.';
+  } else if (velocity <= safeVelocity + 20) {
+    return 'Severe injuries, likely multiple fractures and possible spinal injuries.';
+  } else {
+    return 'Critical injuries, likely spinal injuries and possible brain damage.';
+  }
+}
+
+// Define checkLanding function
+function checkLanding(parachuter, ground) {
+  if (parachuter.y <= -32) {
+    const messageDiv = document.getElementById('safeMessage');
+   
+    if (parachuter.velocity <= safeVelocity) {
+      // Change color to green for safe landing
+   
+     
+      messageDiv.style.display = 'block';
+      messageDiv.textContent = `The parachuter landed safely.`;
+ 
+    } else {
+      const messageDiv = document.getElementById('injuryMessage');
+ 
+   //   console.log('not good')
+      const injurySeverity = calculateInjurySeverity(parachuter.velocity);
+  
+      
+      messageDiv.style.display = 'block';
+      messageDiv.textContent = `The parachuter sustained injuries. Severity: ${injurySeverity}`;
+    }
+  }
+}
+
+function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
+let Vy;
 
   if (parachuteDeployed) {
     // For small Reynolds number (when parachute is deployed)
@@ -320,9 +365,11 @@ function calculateVerticalVelocity3(deltaTime, altitude,) {
  * Animate
  */
 const clock = new THREE.Clock()
-const timeScale = 50; // Change this to speed up or slow down the simulation
-let previousTime = 0;
+let previousTime = 0
 let translationY = 0.00000009; // Adjust this value to control the translation amount
+
+const delta = clock.getDelta();
+
 
 
 const tick = () =>
@@ -336,7 +383,6 @@ const tick = () =>
   mixer.update(deltaTime)
  }
  
-
 
 
   // Calculate the vertical velocity at the current time
@@ -363,11 +409,9 @@ if (skinnedMesh) {
 
 }
 
-
-  // update shader uniform
-  
+ 
 // Update wind effect
-// windShapes.forEach(shape => shape.update(camera));
+windShapes.forEach(shape => shape.update(camera));
 
 
 
@@ -388,7 +432,7 @@ if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists 
   });
 }
 
-
+// 
 
 
     // Call tick again on the next frame
@@ -396,3 +440,15 @@ if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists 
 }
 
 tick()
+
+
+
+
+
+ 
+    
+
+ 
+ 
+
+ 
