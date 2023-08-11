@@ -25,11 +25,11 @@ skyDiverTextureMetallic.flipY = false;
 skyDiverTextureNormal.flipY = false;
 skyDiverTextureClothes.flipY = false;
 
-const m = 125; // Mass of the parachuter (in kg)
+const m = 80; // Mass of the parachuter (in kg)
 const g = 9.81 // Acceleration due to gravity (m/s^2)
-const p = 1.225 // Air density (in kg/m^3)
-const Cd =  1.2; // Drag coefficient
-const A = 0.7; // Cross-sectional area of the parachuter (in m^2)
+const p = 1.2 // Air density (in kg/m^3)
+const Cd =  0.295; // Drag coefficient
+const A = 0.87; // Cross-sectional area of the parachuter (in m^2)
 const k = 0.25; // Damping coefficient 
 let A_parachute = 25;  // Reference area with parachute (m²)
 let Cd_parachute = 1.2;  // Drag coefficient with parachute
@@ -384,12 +384,13 @@ if (parachute) {
 if (skinnedMesh) {
  skinnedMesh.position.y -= Vy*0.0010;
   // Update the velocity and position of the parachuter as it is falling
-  parachuter.y = skinnedMesh.position.y;
-  parachuter.velocity = Vy;
-  // Check if the parachuter has landed and log the result
-  checkLanding(parachuter, ground);
-  //update values
+   parachuter.y = skinnedMesh.position.y;
+   parachuter.velocity = Vy;
+   // Check if the parachuter has landed and log the result
+   checkLanding(parachuter, ground);
+   //update values
 
+  // evolveSmoke();
 
 
    //update values
