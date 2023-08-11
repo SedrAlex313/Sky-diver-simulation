@@ -158,6 +158,9 @@ let mixer = null
 
   // Load the GLTF model
   let skinnedMesh;
+// Define the ground and parachuter
+let ground = {x: 100, y: 100, width: 1000, height: 1000}; // Adjust to match your ground size and position
+let parachuter = {x: 500, y: 1000, width: 50, height: 50, velocity: 0}; // Adjust to match your parachute size and initial position
 
   let parachute; // Declare 'parachute' in the outer scope
 
@@ -267,47 +270,6 @@ directionalLight2.position.set(10, 300, 0);
 myscene.add(directionalLight2);
 
 
-// Define safeVelocity and calculateInjurySeverity function
-
-
-// Define safeVelocity and calculateInjurySeverity function
-const safeVelocity = 10 ;  // Maximum safe landing velocity
-
-function calculateInjurySeverity(velocity) {
-  if (velocity <= safeVelocity + 10) {
-    return 'Minor injuries, possible fractures.';
-  } else if (velocity <= safeVelocity + 20) {
-    return 'Severe injuries, likely multiple fractures and possible spinal injuries.';
-  } else {
-    return 'Critical injuries, likely spinal injuries and possible brain damage.';
-  }
-}
-
-// Define checkLanding function
-function checkLanding(parachuter, ground) {
-  if (parachuter.y <= -32) {
-    const messageDiv = document.getElementById('safeMessage');
-   
-    if (parachuter.velocity <= safeVelocity) {
-      // Change color to green for safe landing
-   
-     
-      messageDiv.style.display = 'block';
-      messageDiv.textContent = `The parachuter landed safely.`;
- 
-    } else {
-      const messageDiv = document.getElementById('injuryMessage');
- 
-   //   console.log('not good')
-      const injurySeverity = calculateInjurySeverity(parachuter.velocity);
-  
-      
-      messageDiv.style.display = 'block';
-      messageDiv.textContent = `The parachuter sustained injuries. Severity: ${injurySeverity}`;
-    }
-  }
-}
-
 
 function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
 let Vy;
@@ -390,15 +352,12 @@ const tick = () =>
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
-    //skinnedMesh.position.y -= Vy*0.0010;
+   skinnedMesh.position.y -= Vy*0.0010;
+   
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
    terminalVelocity.textContent = Vy.toFixed(2)
    console.log(" Vy :", Vy);
-
-   if (uniforms) {
-    uniforms.uTime.value = clock.getElapsedTime()
-  }
   //  updateOverlay();
 
 }
