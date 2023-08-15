@@ -341,9 +341,9 @@ const delta = clock.getDelta();
 
 const tick = () =>
 {
-  const elapsedTime = clock.getElapsedTime() * timeScale
-  const deltaTime =  (1/ timeScale ) * (elapsedTime   - previousTime) ;
-  previousTime = elapsedTime 
+  const elapsedTime = clock.getElapsedTime();
+  const deltaTime = elapsedTime   - previousTime;
+  previousTime = elapsedTime
  console.log(deltaTime);
  if(mixer !==null)
  {
