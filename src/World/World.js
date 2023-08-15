@@ -9,6 +9,8 @@ export class World {
     {
         this.mesh = null; // The skybox mesh
         this.texture = null; // The skybox texture
+        this.lastKnownPosition = new THREE.Vector3(); // The last known position inside the sphere
+        this.lastKnownCameraPosition = new THREE.Vector3(); // The last known position of the camera inside the sphere
     }
      loadTexture(texturePath) {
             const loader = new THREE.TextureLoader();
