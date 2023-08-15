@@ -25,10 +25,6 @@ skyDiverTextureMetallic.flipY = false;
 skyDiverTextureNormal.flipY = false;
 skyDiverTextureClothes.flipY = false;
 
-
-
-
-
 /**
  *
  * Base
@@ -93,6 +89,14 @@ controls.keys = {
 }
 controls.listenToKeyEvents(window);
 controls.keyPanSpeed=300;
+// This will enable the zoom, rotate, and pan operations
+controls.enableZoom = true;
+controls.enableRotate = true;
+controls.enablePan = true;
+
+// This will add damping (inertia) to the controls
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
 
 /**
  * Renderer
@@ -104,12 +108,30 @@ renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 
+var loader = new THREE.CubeTextureLoader();
+
+var path = './'; // replace with your path
+var format = '.png'; // replace with your format
+var urls = [
+  path + 'px' + format, path + 'nx' + format,
+  path + 'py' + format, path + 'ny' + format,
+  path + 'pz' + format, path + 'nz' + format
+];
+console.log(urls);
+loader.load(urls, function (textureCube) {
+
+  textureCube.needsUpdate = true;
+
+  // set the global scene background
+  myscene.background = textureCube;
+});
+
 
 //Create an instance of the World class
 const world = new World();
 
-world.loadTexture('./sky-texture.jpg');
-world.createMesh(30, 240, 240); // Size of the skybox
+// world.loadTexture('./sky-texture.jpg');
+// world.createMesh(60, 480, 480); // Size of the skybox
 
 myscene.add(world.mesh);
 
@@ -123,7 +145,7 @@ const gltfloader = new GLTFLoader();
 gltfloader.setDRACOLoader(dracoLoader);
 
 let mixer = null
-let uniforms;
+
   // Load the GLTF model
   let skinnedMesh;
 // Define the ground and parachuter
@@ -132,6 +154,8 @@ let parachuter = {x: 500, y: 1000, width: 50, height: 50, velocity: 0}; // Adjus
 
   let parachute; // Declare 'parachute' in the outer scope
 
+  let material;
+  let uniforms
 
     // Load the GLTF model
   gltfloader.load("models/skydiver.glb", (gltf) => {
@@ -157,28 +181,8 @@ const material = new THREE.MeshStandardMaterial({
     normalMap: skyDiverTextureNormal,
     normalScale: new THREE.Vector2(-0.2, 0.2),
     envMapIntensity: 0.8,
-    onBeforeCompile: (shader) => {
-      shader.uniforms.uTime = { value: 0 };
-      shader.uniforms.uClothes = { value : skyDiverTextureClothes };
-      uniforms = shader.uniforms;
-  
-      shader.vertexShader = `
-        uniform float uTime;
-        uniform sampler2D uClothes;
-        ${shader.vertexShader}
-      `;
-      shader.vertexShader = shader.vertexShader.replace(
-        `#include <begin_vertex>`,
-        `
-        vec3 clothesTexture = vec3(texture2D(uClothes, vUv));
-        float circleTime = 2.0;
-        float amplitude = 30.0;
-        float circleTimeParam = mod(uTime, circleTime);
-        vec3 transformed = vec3( position );
-        transformed.y += min(clothesTexture.y * sin( circleTimeParam * amplitude * (PI  / circleTime)) * 0.025, 0.5);
-        `
-      );
-    }
+    toneMapped: false,
+
   });
 
 
@@ -190,6 +194,8 @@ const material = new THREE.MeshStandardMaterial({
     }
   });
 
+
+  
 
   
 
@@ -305,41 +311,19 @@ if (!parachuteDeployed){
     const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
     const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
     Vy = term1 * Math.tanh(term2);
-    V=Vy;
 }
-    
+v0 = Vy; // Save the current velocity to be used as initial velocity in next calculation
 
-    // Use the same calculations as for large Reynolds number (free fall), but with updated Cd and A
-    const term1_p = Math.sqrt(2 * m * g / (p * Cd_parachute * A_parachute));
-    const term2_p = Math.sqrt((p * Cd_parachute * A_parachute * g / (2 * m)) * deltaTime);
-    Vy_p = term1_p * Math.tanh(term2_p);
+return Vy;
 
-  
-if (parachuteDeployed) {
-  if (V<=Vy_p) {
-    Z=3;
-    return Vy_p;
-  }else
-  {
-    if (V<=10) {
-      V-=0.005
-      Z=4;
-    }else{
-    Z=2;
-    V-=min}
-
-    return V;
-  }
-
-} else {
-  Z=1;
+  const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
+  const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
+  Vy = term1 * Math.tanh(term2);
+  if (deltaTime % 1 === 0) { // Only print once per second to limit output
+    console.log(`t:${deltaTime}s, Vy:${Vy.toFixed(2)}m/s`);
+  }  
   return Vy;
 }
-
-
-}
-
-
 
 
 
@@ -351,13 +335,16 @@ const clock = new THREE.Clock()
 let previousTime = 0
 let translationY = 0.00000009; // Adjust this value to control the translation amount
 
+const delta = clock.getDelta();
+
+
 
 const tick = () =>
 {
-  const elapsedTime = clock.getElapsedTime();
-  const deltaTime = elapsedTime   - previousTime;
-  previousTime = elapsedTime
- 
+  const elapsedTime = clock.getElapsedTime() * timeScale
+  const deltaTime =  (1/ timeScale ) * (elapsedTime   - previousTime) ;
+  previousTime = elapsedTime 
+ console.log(deltaTime);
  if(mixer !==null)
  {
   mixer.update(deltaTime)
@@ -423,7 +410,7 @@ if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists 
   });
 }
 
-
+// 
 
 
     // Call tick again on the next frame
@@ -431,3 +418,15 @@ if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists 
 }
 
 tick()
+
+
+
+
+
+ 
+    
+
+ 
+ 
+
+ 
