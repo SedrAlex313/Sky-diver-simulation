@@ -383,13 +383,7 @@ if (skinnedMesh) {
       world.lastKnownPosition.copy(skinnedMesh.position);
      
     }
-  //     // Add boundary check for the camera
-  // let cameraDistance = world.mesh.position.distanceTo(camera.position);
-  // if (cameraDistance > world.mesh.geometry.parameters.radius - 2) { // Adjust this value to account for the 2 unit difference
-  //   camera.position.copy(world.lastKnownCameraPosition);
-  // } else {
-  //   world.lastKnownCameraPosition.copy(camera.position);
-  // }
+
   
    parachuter.y = skinnedMesh.position.y;
    parachuter.velocity = VFinal;
@@ -398,7 +392,7 @@ if (skinnedMesh) {
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
    terminalVelocity.textContent = VFinal.toFixed(2)
-   console.log(" Z :", Z,'dec:',dec);
+   
   //  updateOverlay();
 
 }
