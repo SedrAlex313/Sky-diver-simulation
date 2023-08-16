@@ -19,6 +19,7 @@ export class World {
 
         createMesh(radius, width, height) {
             const geometry = new THREE.SphereGeometry(radius, width, height);
+            geometry.scale(10,10,10);
             const material = new THREE.MeshBasicMaterial
             ({ 
                 toneMapped: false,

@@ -1,0 +1,406 @@
+{
+  "accessors": [
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 110,
+      "max": [
+        10.695769309997559,
+        9.558188438415527,
+        18.51053237915039
+      ],
+      "min": [
+        5.343503952026367,
+        3.7277679443359375,
+        14.78900146484375
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 1320,
+      "componentType": 5126,
+      "count": 110,
+      "max": [
+        0.9274548888206482,
+        0.9861855506896973,
+        0.6422667503356934
+      ],
+      "min": [
+        -0.6508063077926636,
+        -0.8617734313011169,
+        -0.3216920793056488
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 110,
+      "max": [
+        1.0,
+        1.0
+      ],
+      "min": [
+        0.0,
+        0.0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 360,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 2640,
+      "componentType": 5126,
+      "count": 65532,
+      "max": [
+        19.59610939025879,
+        19.937347412109375,
+        23.567296981811523
+      ],
+      "min": [
+        -19.32431983947754,
+        -14.775581359863281,
+        11.625406265258789
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 789024,
+      "componentType": 5126,
+      "count": 65532,
+      "max": [
+        0.9999411702156067,
+        0.9998833537101746,
+        0.9999986886978149
+      ],
+      "min": [
+        -0.9996935725212097,
+        -0.9999584555625916,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 880,
+      "componentType": 5126,
+      "count": 65532,
+      "max": [
+        0.9997536540031433,
+        0.9987791776657104
+      ],
+      "min": [
+        0.000244140625,
+        0.00024725927505642176
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 1440,
+      "componentType": 5125,
+      "count": 421488,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 1575408,
+      "componentType": 5126,
+      "count": 13754,
+      "max": [
+        12.749134063720703,
+        9.828394889831543,
+        21.800386428833008
+      ],
+      "min": [
+        -18.064651489257813,
+        -14.231321334838867,
+        11.882711410522461
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 1740456,
+      "componentType": 5126,
+      "count": 13754,
+      "max": [
+        0.9994313716888428,
+        0.9998182058334351,
+        1.0
+      ],
+      "min": [
+        -0.9999890923500061,
+        -0.9999908804893494,
+        -0.9999596476554871
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 525136,
+      "componentType": 5126,
+      "count": 13754,
+      "max": [
+        0.9997183680534363,
+        0.9665526151657104
+      ],
+      "min": [
+        0.000244140625,
+        0.0003513885894790292
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 1687392,
+      "componentType": 5125,
+      "count": 59268,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "artfletch (https://sketchfab.com/artfletch)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/lynx-helicopter-9028fe1f38a74a789a023300e034efd3",
+      "title": "Lynx Helicopter"
+    },
+    "generator": "Sketchfab-12.67.0",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 1924464,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 635168,
+      "byteOffset": 1924464,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 1905504,
+      "byteOffset": 2559632,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 4465136,
+      "uri": "scene.bin"
+    }
+  ],
+  "images": [
+    {
+      "uri": "textures/lambert3_baseColor.jpeg"
+    }
+  ],
+  "materials": [
+    {
+      "alphaMode": "BLEND",
+      "doubleSided": true,
+      "name": "blinn1",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.097306393042145,
+          0.097306393042145,
+          0.097306393042145,
+          0.4881239017687224
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.17746657424803458
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "lambert3",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicFactor": 0.17195489727547442,
+        "roughnessFactor": 0.6
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "LynxHelicopter_blinn1_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "LynxHelicopter_lambert3_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 5,
+            "POSITION": 4,
+            "TEXCOORD_0": 6
+          },
+          "indices": 7,
+          "material": 1,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "LynxHelicopter_lambert3_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 9,
+            "POSITION": 8,
+            "TEXCOORD_0": 10
+          },
+          "indices": 11,
+          "material": 1,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -2.220446049250313e-16,
+        1.0,
+        0.0,
+        0.0,
+        -1.0,
+        -2.220446049250313e-16,
+        0.0,
+        0.0,
+        -0.3519270122051239,
+        0.05161830782890312,
+        1.0
+      ],
+      "name": "Sketchfab_model"
+    },
+    {
+      "children": [
+        2
+      ],
+      "matrix": [
+        0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "NAMLynxHelicopter03.fbx"
+    },
+    {
+      "children": [
+        3
+      ],
+      "name": "RootNode"
+    },
+    {
+      "children": [
+        4,
+        5,
+        6
+      ],
+      "matrix": [
+        0.8106371768373972,
+        -0.5851958242495462,
+        0.020327685800124718,
+        0.0,
+        0.5851415862859471,
+        0.8108796117177098,
+        0.009142171476283252,
+        0.0,
+        -0.021833266541219,
+        0.004483590238909664,
+        0.9997515720871408,
+        0.0,
+        -2.839876174926758,
+        -0.790753185749054,
+        -11.82136344909668,
+        1.0
+      ],
+      "name": "LynxHelicopter"
+    },
+    {
+      "mesh": 0,
+      "name": "LynxHelicopter_blinn1_0"
+    },
+    {
+      "mesh": 1,
+      "name": "LynxHelicopter_lambert3_0"
+    },
+    {
+      "mesh": 2,
+      "name": "LynxHelicopter_lambert3_0"
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    }
+  ]
+}

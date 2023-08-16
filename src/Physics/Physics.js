@@ -1,43 +1,26 @@
 
-// Definning the variable
 
-const Cd = 0.25; // Drag coefficient
-const A = 0.7; // Cross-sectional area of the parachuter (in m^2)
-const k = 0.25; // Damping coefficient 
-const m = 80; // Mass of the parachuter (in kg)
+
 const g = 9.81; // Acceleration due to gravity (m/s^2)
 const p = 1.225 // Air density (in kg/m^3)
+let Cd = 0.7;  // Drag coefficient without parachute
+let A = 1;   // Reference area without parachute (m²)
 let Cd_parachute = 1.2;  // Drag coefficient with parachute
 let A_parachute = 25;  // Reference area with parachute (m²)
-const k_p = 2 * m * g / (p * Cd_parachute * A_parachute);
-let V;
 let Vy;
 let Vy_p;
-let v0;
-let t0;
- // Calculate k for parachute
- 
-
-
-// Variables
-let time = 0; // Current time (in seconds)
-let position = new THREE.Vector3(0, 0, 0); // Initial position of the skydiver (m)
-let velocity = new THREE.Vector3(0, 0, 0); // Initial velocity of the skydiver (m/s)const Vy0 = 0; // Initial vertical velocity of the parachuter (in m/s)
-
+const safeVelocity = 10 ;  // Maximum safe landing velocity
 
 
 export class Physics {
-    constructor(gravity, airResistance,v0,t0) {
+    constructor(gravity,m) {
       this.gravity = gravity;
-      this.airResistance = airResistance;
-      this.v0 = v0;
-      this.t0 = t0;
+      this.m = m;
       
+     
     }
-  
-
-
-
+   
+    
  calculateInjurySeverity(velocity) {
   if (velocity <= safeVelocity + 10) {
     return 'Minor injuries, possible fractures.';
@@ -47,14 +30,14 @@ export class Physics {
     return 'Critical injuries, likely spinal injuries and possible brain damage.';
   }
 }
- checkLanding(parachuter, ground) {
-  if (parachuter.y <= -30.9) {
-    const messageDiv = document.getElementById('safeMessage');
+ checkLanding(velocity) {
+  
    
-    if (parachuter.velocity <= safeVelocity) {
+   
+    if (velocity <= safeVelocity) {
       // Change color to green for safe landing
    
-     
+      const messageDiv = document.getElementById('safeMessage');
       messageDiv.style.display = 'block';
       messageDiv.textContent = `The parachuter landed safely.`;
    // Reload the page after 3 seconds
@@ -63,7 +46,7 @@ export class Physics {
       const messageDiv = document.getElementById('injuryMessage');
  
    //   console.log('not good')
-      const injurySeverity = calculateInjurySeverity(parachuter.velocity);
+      const injurySeverity = this.calculateInjurySeverity(velocity);
   
       
       messageDiv.style.display = 'block';
@@ -72,29 +55,37 @@ export class Physics {
    
     }
   }
-}
 
 
 
 
- calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
+
+ calculateVelocityFreeFall(deltaTime, parachuteDeployed) {
     if (!parachuteDeployed){
         // Use previous calculations for large Reynolds number (free fall)
-        const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
-        const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
+        const term1 = Math.sqrt(2 * this.m * g / (p * Cd * A));
+        const term2 = Math.sqrt((p * Cd * A * g / (2 * this.m)) * deltaTime);
         Vy = term1 * Math.tanh(term2);
-        V = Vy;
-    } else {
-        if (this.t0 === undefined || this.v0 === undefined) {
+       
+        return Vy;
+      }
+    }
+      
+
+
+    calculateVelocityParachute(deltaTime,v0,t0) {
+      console.log('calculateVerticalVelocity2',v0,t0)
+     const  k_p=  2 * this.m * g / (p * Cd_parachute * A_parachute);
+        if (t0 === undefined || v0 === undefined) {
+         
             throw new Error('Parachute was deployed but initial time and velocity were not set');
         }
        
         // Use the same calculations as for large Reynolds number (free fall), but with updated Cd and A
-        Vy_p = (m * g / k_p) * (1 - Math.exp(-(k_p / m) * (deltaTime - this.t0))) + this.v0 * Math.exp(-(k_p / m) * (deltaTime - t0));
-        V = Vy_p;
+        Vy_p = (this.m * g / k_p) * (1 - Math.exp(-(k_p / this.m) * (deltaTime - t0))) + v0 * Math.exp(-(k_p / this.m) * (deltaTime - t0));
+    
+        return Vy_p;
     }
-    return V;
-}
 
 
 

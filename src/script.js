@@ -9,7 +9,12 @@ import { World } from './world/world';
 import { Physics } from './Physics/Physics';
 import { Parachute } from './Parachute/Parachute';
 import { MeshStandardMaterial } from 'three';
+import { ThirdPersonPerspective } from "./World/ThirdPersonPerspective";
 import { WindShape } from './Physics/Windshape';
+import { Camera } from "./World/Camera";
+import { AudioManager } from "./World/Audio";
+import { GuiController } from "./World/Gui";
+//import { gui } from "dat.gui";
 
 var textureLoader = new THREE.TextureLoader();
 
@@ -35,64 +40,100 @@ skyDiverTextureClothes.flipY = false;
  */
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
-// defining the values of html elements
-const deltaTime= document.getElementById("delta-time");
-const terminalVelocity= document.getElementById(
-  "terminal-velocity",
+
+const velocityOnY= document.getElementById(
+  "velocityOnY",
 );
-const acceleration = document.getElementById("acceleration");
-const currentXMeter = document.getElementById("current-x");
+const velocityOnX= document.getElementById(
+  "velocityOnX",
+);
+const velocityOnZ= document.getElementById(
+  "velocityOnZ",
+);
+window.addEventListener("keydown", function (event) {
+  if (event.key === 't') {
+    currentCamera = thirdPersonPerspectiveCamera;
+    console.log('thirdPersonPerspectiveCamera ');
+  } else if (event.key === 'c') {
+    console.log('currentCamera ');
+    currentCamera = camera;
+  }
+});
 const currentYMeter = document.getElementById("current-y");
 
 // Scene
 const myscene = new THREE.Scene()
 
+
+const parameters = {
+  length: 130,
+  m: 80,
+  volume: 0.5,
+  deployParachute: false,
+};
+// Define safeVelocity and calculateInjurySeverity function
+const guiController = new GuiController(parameters);
+let volume = parameters.volume;
+let m = parameters.m; // Mass of the parachuter (in kg)  
+let v0, t0;
+//#region // Calculate k for parachute   
+                                                                                
+// initialize variables for x, and z directions
+let velocityX = 10;   //initial velocity of the skydiver moving along x-axis
+let velocityz = 1000;   //initial velocity of the skydiver moving along z-axis which is taken from plane
+let windForceX = 0;  // wind force along x-axis
+let windForceZ = 0;  //wind force along z-axis
+let windSpeed = 6.26; // wind speed in m/s
+let angle = Math.random() * 2 * Math.PI; // random wind direction
+ // mass of skydiver
+let windCoefficient = 1; //wind coefficient, adjust to fit your simulation needs
+ // Mass of the parachuter (in kg)
+const g = 9.81; // Acceleration due to gravity (m/s^2)
+const p = 1.225 // Air density (in kg/m^3)
+let Cd_parachute = 1.2;  // Drag coefficient with parachute
+let A_parachute = 25;  // Reference area with parachute (m²)
+const physics= new Physics(g,m);                                                                                                     
+let velocityZ =  velocityz/40;
+//#endregion 
+
 /**
  * Sizes
  */
+
 
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
 }
-window.addEventListener('resize', () =>
-{
-    // Update sizes
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-})
-
+window.addEventListener("resize", () => {
+  if (currentCamera === camera) {
+    classCamera.updateSize();
+  }
+  // Update renderer
+  renderer.setSize(sizes.width, sizes.height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+});
 
 /**
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.x = 0
-camera.position.y = 0
-camera.position.z = 3;
+const thirdPersonPerspective = new ThirdPersonPerspective(sizes, canvas);
+const thirdPersonPerspectiveCamera = thirdPersonPerspective.getCamera();
 
-myscene.add(camera)
+const classCamera = new Camera(sizes, canvas);
+const camera = classCamera.getCamera();
 
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-controls.keys = {
-	LEFT: 'KeyA', //left arrow
-	UP: 'KeyW', // up arrow
-	RIGHT: 'KeyD', // right arrow
-	BOTTOM: 'KeyS' // down arrow
-}
-controls.listenToKeyEvents(window);
-controls.keyPanSpeed=300;
+let currentCamera = thirdPersonPerspectiveCamera;
+
+
+myscene.add(currentCamera);
+
+const controls = classCamera.getControls();
+
+
+
+
 
 /**
  * Renderer
@@ -195,7 +236,8 @@ const material = new THREE.MeshStandardMaterial({
 
  
 
-  skinnedMesh.position.set(0, 10,0);
+  skinnedMesh.position.set(0, 10,-100);
+  skinnedMesh.scale.set(2, 2,2);
   // skinnedMesh.rotation.x = 30
 
 
@@ -209,7 +251,7 @@ parachute.loadModel();
   })
 
 //physics
-const physics = new Physics(-9.81, 0.01);
+
 
 
 
@@ -217,8 +259,9 @@ const physics = new Physics(-9.81, 0.01);
 
 
 //create an object and define the amount
-const windShapes = Array.from({length: 130}, () => new WindShape());
-windShapes.forEach(shape => myscene.add(shape.mesh));
+let lengthWs = parameters.length;
+const windShapes = Array.from({ length: lengthWs }, () => new WindShape());
+windShapes.forEach((shape) => myscene.add(shape.mesh));
 
 
  
@@ -234,101 +277,17 @@ const directionalLight2 = new THREE.DirectionalLight(0xffffff, 2);
 directionalLight2.position.set(10, 300, 0);
 myscene.add(directionalLight2);
 
-// function collision(a, b) {
-//   return a.x < b.x + b.width &&
-//          a.x + a.width > b.x &&
-//          a.y < b.y + b.height &&
-//          a.y + a.height > b.y;
-// }
 
-// Define safeVelocity and calculateInjurySeverity function
-const safeVelocity = 10 ;  // Maximum safe landing velocity
+/* Audioooooooooooooooooo */
 
-function calculateInjurySeverity(velocity) {
-  if (velocity <= safeVelocity + 10) {
-    return 'Minor injuries, possible fractures.';
-  } else if (velocity <= safeVelocity + 20) {
-    return 'Severe injuries, likely multiple fractures and possible spinal injuries.';
-  } else {
-    return 'Critical injuries, likely spinal injuries and possible brain damage.';
-  }
-}
+const naturalAudio = new AudioManager(camera, true);
+naturalAudio.loadSound("sounds/Natural.mp3");
 
-// Define checkLanding function
-function checkLanding(parachuter, ground) {
-  if (parachuter.y <= -30.9) {
-    const messageDiv = document.getElementById('safeMessage');
-   
-    if (parachuter.velocity <= safeVelocity) {
-      // Change color to green for safe landing
-   
-     
-      messageDiv.style.display = 'block';
-      messageDiv.textContent = `The parachuter landed safely.`;
-   // Reload the page after 3 seconds
-   // 3000ms = 3 seconds
-    } else {
-      const messageDiv = document.getElementById('injuryMessage');
- 
-   //   console.log('not good')
-      const injurySeverity = calculateInjurySeverity(parachuter.velocity);
-  
-      
-      messageDiv.style.display = 'block';
-      messageDiv.textContent = `The parachuter sustained injuries. Severity: ${injurySeverity}`;
-      // Reload the page after 3 seconds
-   
-    }
-  }
-}
-let dec=0.1;
-const m = 80; // Mass of the parachuter (in kg)
-const g = 9.81; // Acceleration due to gravity (m/s^2)
-const p = 1.225 // Air density (in kg/m^3)
-const k = 0.25; // Damping coefficient 
+const parachuteAudio = new AudioManager(camera, false);
+parachuteAudio.loadSound("sounds/Parachute.mp3");
 
-let Cd = 0.7;  // Drag coefficient without parachute
-let A = 1;   // Reference area without parachute (m²)
-let Cd_parachute = 1.2;  // Drag coefficient with parachute
-let A_parachute = 25;  // Reference area with parachute (m²)
-let Z;
-let V;
-let Vy;
-let Vy_p;
- // Calculate k for parachute
- const k_p = 2 * m * g / (p * Cd_parachute * A_parachute);
-
-let v0, t0;
-
-function deployParachute(currentTime, currentVelocity) {
-    // Capture the current time and velocity when the parachute is deployed
-    t0 = currentTime;
-    v0 = currentVelocity;
-}
-
-function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
-    if (!parachuteDeployed){
-        // Use previous calculations for large Reynolds number (free fall)
-        const term1 = Math.sqrt(2 * m * g / (p * Cd * A));
-        const term2 = Math.sqrt((p * Cd * A * g / (2 * m)) * deltaTime);
-        Vy = term1 * Math.tanh(term2);
-        V = Vy;
-    } else {
-        if (t0 === undefined || v0 === undefined) {
-            throw new Error('Parachute was deployed but initial time and velocity were not set');
-        }
-       
-        // Use the same calculations as for large Reynolds number (free fall), but with updated Cd and A
-        Vy_p = (m * g / k_p) * (1 - Math.exp(-(k_p / m) * (deltaTime - t0))) + v0 * Math.exp(-(k_p / m) * (deltaTime - t0));
-        V = Vy_p;
-    }
-    return V;
-}
-
-
-
-
-
+const parachuteLandingAudio = new AudioManager(camera, false);
+parachuteLandingAudio.loadSound("sounds/Parachute landing.mp3");
 
 /**
  * Animate
@@ -336,7 +295,7 @@ function calculateVerticalVelocity2(deltaTime, parachuteDeployed) {
 const clock = new THREE.Clock()
 let previousTime = 0
 let translationY = 0.00000009; // Adjust this value to control the translation amount
-
+let VFinalGui;
 
 const tick = () =>
 {
@@ -344,6 +303,13 @@ const tick = () =>
   const deltaTime = elapsedTime   - previousTime;
   previousTime = elapsedTime
  
+  m = guiController.parameters.m;
+  lengthWs = guiController.parameters.length;
+  volume = guiController.parameters.volume;
+  naturalAudio.setVolume(volume)
+  parachuteAudio.setVolume(volume)
+  parachuteLandingAudio.setVolume(volume)
+
  if(mixer !==null)
  {
   mixer.update(deltaTime)
@@ -359,39 +325,61 @@ const tick = () =>
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
   
-  
+  // Calculate the wind velocity components and wind forces.
+  let windVelocityX = windSpeed * Math.cos(angle);
+  let windVelocityZ = windSpeed * Math.sin(angle);
+  windForceX = windCoefficient * windVelocityX;
+  windForceZ = windCoefficient * windVelocityZ;
+ 
+  // Update the velocity along x and z axis.
+     // Update the velocity along x and z axis.
+     velocityX += windForceX / m * deltaTime;
+     velocityZ += windForceZ / m * deltaTime;
+
+  // Now update the position of the skydiver.
+  skinnedMesh.position.x += 0.007*velocityX;
+  skinnedMesh.position.z += 0.007*velocityZ;
+//console.log('velocityX', skinnedMesh.position.z,'velocityZ', skinnedMesh.position.x, skinnedMesh.position.y);
   
   if (parachute && parachute.parachuteDeployed) {
   
-    VFinal = calculateVerticalVelocity2(elapsedTime, true, v0, t0);
+    VFinal = physics.calculateVelocityParachute(elapsedTime, v0, t0);
   }
   else{
-    VFinal = calculateVerticalVelocity2(elapsedTime, false, v0, t0);
+    VFinal = physics.calculateVelocityFreeFall(elapsedTime, false);
   }
-   skinnedMesh.position.y -= VFinal*0.001;
-   if (skinnedMesh.position.y <= -31) {
+   skinnedMesh.position.y -= VFinal*0.007;
+   if (currentCamera === thirdPersonPerspectiveCamera) {
+    thirdPersonPerspectiveCamera.position.y -= VFinal * 0.001;
+  }
+
+   if (skinnedMesh.position.y <= -311) {
     // Stop the simulation
     return;
   }
+  parachuter.y = skinnedMesh.position.y;
+  parachuter.velocity = VFinal;
+  // Check if the parachuter has landed and log the result
+
   
    // Update the velocity and position of the parachuter as it is falling
    let distance = world.mesh.position.distanceTo(skinnedMesh.position);
-    if (distance > world.mesh.geometry.parameters.radius+3) {
-      skinnedMesh.position.copy(world.lastKnownPosition);
+    if (distance > 10*(world.mesh.geometry.parameters.radius+0.2)) {
+       skinnedMesh.position.copy(world.lastKnownPosition);
+      physics.checkLanding(VFinal);
      
-    } else {
-      world.lastKnownPosition.copy(skinnedMesh.position);
+     } else {
+       world.lastKnownPosition.copy(skinnedMesh.position);
      
-    }
+     } 
 
   
-   parachuter.y = skinnedMesh.position.y;
-   parachuter.velocity = VFinal;
-   // Check if the parachuter has landed and log the result
-   checkLanding(parachuter, ground);
+  
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
-   terminalVelocity.textContent = VFinal.toFixed(2)
+   velocityOnY.textContent = VFinal.toFixed(2)
+   velocityOnX.textContent = velocityX.toFixed(2)
+  velocityOnZ.textContent = velocityZ.toFixed(2)
    
   //  updateOverlay();
 
@@ -405,11 +393,10 @@ if (uniforms) {
   uniforms.uTime.value = clock.getElapsedTime()
 }
 
-    // Update controls
-    controls.update()
+controls.update();
 
-    // Render
-    renderer.render(myscene, camera)
+// Render
+renderer.render(myscene, currentCamera);
     
    // Rest of your code...
 
@@ -418,9 +405,12 @@ if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists 
   window.addEventListener('keydown', function(event) {
     if(event.key === 'p') {
           // Capture the current time and velocity when the parachute is deployed
+
           t0 = elapsedTime;
           v0 = VFinal;
+       
     parachute.deployParachute(m, g, p, Cd_parachute, A_parachute, VFinal);
+   playParachuteS();
    // console.log( parachute.calculateTension(m, g, p, Cd_parachute, A_parachute, VFinal));
     }
   });
@@ -433,6 +423,23 @@ if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists 
 }
 
 tick()
+
+// guiController.addParachuteButton(function () {
+//   parachute.deployParachute(m, g, p, Cd_parachute, A_parachute, VFinalGui);
+//   playParachuteS();
+// });
+
+function playParachuteS() {
+  if (parachute.parachuteDeployed) {
+    naturalAudio.pauseSound();
+    parachuteAudio.playSound();
+    setTimeout(() => {
+      parachuteLandingAudio.playSound(),
+        parachuteLandingAudio.sound.setLoop(true);
+    }, 2000);
+  }
+}
+
 
 
 
