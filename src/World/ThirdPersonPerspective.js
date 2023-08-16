@@ -12,11 +12,12 @@ export class ThirdPersonPerspective {
       0.1, //near
       10000 //far
     );
-    // this.camera.rotateX(-10);
+    // this.camera.rotateX(+90);
     // this.camera.position.x = this.position.x;
     // this.camera.position.y = this.position.y;
     // this.camera.position.z = this.position.z;
     this.camera.position.set(0, 14, 0);
+
     this.camera.lookAt(0, 0, 2);
   }
 

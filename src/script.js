@@ -95,7 +95,7 @@ let A_parachute = 25;  // Reference area with parachute (m²)
 const physics= new Physics(g,m);                                                                                                     
 let velocityZ =  velocityz/40;
 //#endregion 
-
+let Cd_parachut =Cd_parachute/2  ; // Adjust this value as needed
 /**
  * Sizes
  */
@@ -124,7 +124,7 @@ const thirdPersonPerspectiveCamera = thirdPersonPerspective.getCamera();
 const classCamera = new Camera(sizes, canvas);
 const camera = classCamera.getCamera();
 
-let currentCamera = thirdPersonPerspectiveCamera;
+let currentCamera = camera;
 
 
 myscene.add(currentCamera);
@@ -238,6 +238,7 @@ const material = new THREE.MeshStandardMaterial({
 
   skinnedMesh.position.set(0, 10,-100);
   skinnedMesh.scale.set(2, 2,2);
+  skinnedMesh.rotateX (100);
   // skinnedMesh.rotation.x = 30
 
 
@@ -292,13 +293,58 @@ parachuteLandingAudio.loadSound("sounds/Parachute landing.mp3");
 /**
  * Animate
  */
+const gltfLoader2 = new GLTFLoader();
+
+// Load The Helicoptar Model
+gltfLoader2.load("models/lynx_helicopter.glb", (glb) => {
+  const root = glb.scene;
+  
+
+  myscene.add(root);
+  glb.scene.scale.set(150, 150, 150);
+
+  glb.scene.position.set(+4, 58, -95);
+  root.rotation.y = Math.PI;
+
+  // console.log(glb);
+});
+//physics
+
+// Manage The Jump
+let jump = false;
+let skinnedMeshRotate = false;
+let cameraState=0;
+window.addEventListener('keydown', function(event) {
+  if(event.key === 'v') {
+    cameraState = (cameraState + 1) % 3; // Cycle through 0, 1, 2, 3
+   }
+ });
+window.addEventListener("keydown", function (event) {
+  if (event.key === "j") {
+    if (skinnedMesh) {
+      if (!skinnedMeshRotate) {
+        skinnedMesh.rotateX(-100);
+        skinnedMeshRotate = true;
+      }
+     
+    }
+    jump = true;
+  }
+});
 const clock = new THREE.Clock()
 let previousTime = 0
 let translationY = 0.00000009; // Adjust this value to control the translation amount
 let VFinalGui;
+let previousJump=false;
+let cameraRotate=false;
 
 const tick = () =>
 {
+  if (jump) {
+    if (!previousJump) {
+      clock.start();
+      previousJump = true;
+    }
   const elapsedTime = clock.getElapsedTime();
   const deltaTime = elapsedTime   - previousTime;
   previousTime = elapsedTime
@@ -324,17 +370,29 @@ const tick = () =>
 
 // Update the skydiver's velocity along the y-axis using the calculated vertical velocity
 if (skinnedMesh) {
+ 
   
   // Calculate the wind velocity components and wind forces.
+
   let windVelocityX = windSpeed * Math.cos(angle);
   let windVelocityZ = windSpeed * Math.sin(angle);
   windForceX = windCoefficient * windVelocityX;
   windForceZ = windCoefficient * windVelocityZ;
  
+
+// ...
+
+
+  velocityX += windForceX / m * deltaTime;
+     velocityZ += windForceZ / m * deltaTime;
+     if (parachute && parachute.parachuteDeployed) {
+      // Decrease the velocities on the x and z axes
+      velocityX -= Cd_parachut;
+      velocityZ -= Cd_parachut;
+    }
   // Update the velocity along x and z axis.
      // Update the velocity along x and z axis.
-     velocityX += windForceX / m * deltaTime;
-     velocityZ += windForceZ / m * deltaTime;
+   
 
   // Now update the position of the skydiver.
   skinnedMesh.position.x += 0.007*velocityX;
@@ -349,10 +407,33 @@ if (skinnedMesh) {
     VFinal = physics.calculateVelocityFreeFall(elapsedTime, false);
   }
    skinnedMesh.position.y -= VFinal*0.007;
-   if (currentCamera === thirdPersonPerspectiveCamera) {
-    thirdPersonPerspectiveCamera.position.y -= VFinal * 0.001;
-  }
+  
 
+  
+ 
+       if (cameraState == 0) {
+         // Original position
+         thirdPersonPerspectiveCamera.lookAt(skinnedMesh.position);
+         thirdPersonPerspectiveCamera.position.y = skinnedMesh.position.y + 10;
+         thirdPersonPerspectiveCamera.position.x = skinnedMesh.position.x;
+         thirdPersonPerspectiveCamera.position.z = skinnedMesh.position.z;
+       } else if (cameraState == 1) {
+         // Position when parachute is deployed
+         
+          thirdPersonPerspectiveCamera.lookAt(skinnedMesh.position);
+           thirdPersonPerspectiveCamera.position.y = skinnedMesh.position.y + 7;
+           thirdPersonPerspectiveCamera.position.x = skinnedMesh.position.x;
+           thirdPersonPerspectiveCamera.position.z = skinnedMesh.position.z - 14;
+         
+         
+       } else if (cameraState == 2) {
+         // Position on the right of the parachuter
+         thirdPersonPerspectiveCamera.position.y = skinnedMesh.position.y + 10;
+         thirdPersonPerspectiveCamera.position.x = skinnedMesh.position.x + 10; // Adjust as needed
+         thirdPersonPerspectiveCamera.position.z = skinnedMesh.position.z;
+         thirdPersonPerspectiveCamera.lookAt(skinnedMesh.position);
+       }
+   console.log(cameraState);
    if (skinnedMesh.position.y <= -311) {
     // Stop the simulation
     return;
@@ -385,20 +466,7 @@ if (skinnedMesh) {
 
 }
 
- 
-// Update wind effect
-windShapes.forEach(shape => shape.update(camera));
 
-if (uniforms) {
-  uniforms.uTime.value = clock.getElapsedTime()
-}
-
-controls.update();
-
-// Render
-renderer.render(myscene, currentCamera);
-    
-   // Rest of your code...
 
 // Listen for 'p' key press
 if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists before accessing 'parachuteDeployed'
@@ -415,6 +483,22 @@ if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists 
     }
   });
 }
+  }
+// Update wind effect
+windShapes.forEach(shape => shape.update(camera));
+
+if (uniforms) {
+  uniforms.uTime.value = clock.getElapsedTime()
+}
+
+controls.update();
+
+
+// Render
+renderer.render(myscene, currentCamera);
+    
+   // Rest of your code...
+
 
 
 
@@ -424,10 +508,7 @@ if (parachute && !parachute.parachuteDeployed) { // Check if 'parachute' exists 
 
 tick()
 
-// guiController.addParachuteButton(function () {
-//   parachute.deployParachute(m, g, p, Cd_parachute, A_parachute, VFinalGui);
-//   playParachuteS();
-// });
+
 
 function playParachuteS() {
   if (parachute.parachuteDeployed) {
