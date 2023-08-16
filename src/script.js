@@ -76,7 +76,7 @@ const guiController = new GuiController(parameters);
 let volume = parameters.volume;
 let m = parameters.m; // Mass of the parachuter (in kg)  
 let v0, t0;
-//#region // Calculate k for parachute   
+//#region // Calculate k for parachute                                                                               
                                                                                 
 // initialize variables for x, and z directions
 let velocityX = 10;   //initial velocity of the skydiver moving along x-axis
@@ -94,8 +94,9 @@ let Cd_parachute = 1.2;  // Drag coefficient with parachute
 let A_parachute = 25;  // Reference area with parachute (m²)
 const physics= new Physics(g,m);                                                                                                     
 let velocityZ =  velocityz/40;
+let Cd_parachut =Cd_parachute/80  ; // Adjust this value as needed
 //#endregion 
-let Cd_parachut =Cd_parachute/2  ; // Adjust this value as needed
+
 /**
  * Sizes
  */
@@ -459,10 +460,23 @@ if (skinnedMesh) {
    //update values
    currentYMeter.textContent = skinnedMesh.position.y .toFixed(2)
    velocityOnY.textContent = VFinal.toFixed(2)
+   //#region  //  updateOverlay();                                                                   
+   if (velocityX <=0 ){
+   velocityOnX.textContent = 0
+   if(velocityZ <=0){
+   velocityOnZ.textContent = 0
+   }
+   else{
+    velocityOnZ.textContent = velocityZ.toFixed(2)
+  }
+}
+  
+  else{
    velocityOnX.textContent = velocityX.toFixed(2)
   velocityOnZ.textContent = velocityZ.toFixed(2)
-   
-  //  updateOverlay();
+   }
+   //#endregion
+  
 
 }
 
